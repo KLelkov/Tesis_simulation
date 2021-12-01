@@ -2,8 +2,8 @@ V = 5.236;
 lf = 0.4;
 lr = 0.4;
 lw = 0.6;
-wf = atan(lw / 2*lf);
-wr = atan(lw / 2*lr);
+wf = atan(lw / 2/lf);
+wr = atan(lw / 2/lr);
 Lr = sqrt(lr^2 + 0.25*lw^2);
 Lf = sqrt(lf^2 + 0.25*lw^2);
 

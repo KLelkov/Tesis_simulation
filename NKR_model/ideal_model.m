@@ -119,20 +119,19 @@ for i = 1:nSim
     % Linear speed of each wheel
     V1(i) = V(i); V2(i) = V(i); V3(i) = V(i); V4(i) = V(i);
     A1 = 0; A2 = 0; A3 = 0; A4 = 0;
-    
-     
-    
+       
     Vxb = 0.25 * ( V(i)*cos(gamma(i,1)) + V(i)*cos(gamma(i,2)) + V(i) + V(i));
     Vyb = 0.25 * ( V(i)*sin(gamma(i,1)) + V(i)*sin(gamma(i,2)));
     betta(i) = atan(Vyb/Vxb);
     Anr(i) = V(i)*cos(betta(i))*tan(gamma_mean) / (lf + lr);
+    Rc = abs(V(i) / Anr(i));
     
     % If robot is turning - they differ
     if rem(trajPhase, 2) == 0
-        V1(i) = abs(Anr(i)) * ( 10 + lw/2 * sign(Anr(i)) * cos(gamma_mean) );
-        V2(i) = abs(Anr(i)) * ( 10 - lw/2 * sign(Anr(i)) * cos(gamma_mean));
-        V3(i) = abs(Anr(i)) * ( 10 + lw/2 * sign(Anr(i)) * cos(gamma_mean));
-        V4(i) = abs(Anr(i)) * ( 10 - lw/2 * sign(Anr(i)) * cos(gamma_mean));
+        V1(i) = abs(Anr(i)) * sqrt(lf^2 + ( Rc + lw/2 * sign(Anr(i)))^2);
+        V2(i) = abs(Anr(i)) * sqrt(lf^2 + ( Rc - lw/2 * sign(Anr(i)))^2);
+        V3(i) = abs(Anr(i)) * sqrt(lf^2 + ( Rc + lw/2 * sign(Anr(i)))^2);
+        V4(i) = abs(Anr(i)) * sqrt(lf^2 + ( Rc - lw/2 * sign(Anr(i)))^2);
     end  
 
     %% True model parameters
@@ -145,27 +144,7 @@ for i = 1:nSim
         X(i) = X(i-1) + V(i)*cos(Heading(i) + betta(i))*dt;
         Y(i) = Y(i-1) + V(i)*sin(Heading(i) + betta(i))*dt;
     end  
-    %% True Wheel parameters
-    wheels(i,1) = X(i) + lf*cos(Heading(i)) + lw/2*sin(Heading(i));
-    wheels(i,2) = Y(i) + lf*sin(Heading(i)) - lw/2*cos(Heading(i));
-    wheels(i,3) = X(i) + lf*cos(Heading(i)) - lw/2*sin(Heading(i));
-    wheels(i,4) = Y(i) + lf*sin(Heading(i)) + lw/2*cos(Heading(i));
-    wheels(i,5) = X(i) - lr*cos(Heading(i)) + lw/2*sin(Heading(i));
-    wheels(i,6) = Y(i) - lr*sin(Heading(i)) - lw/2*cos(Heading(i));
-    wheels(i,7) = X(i) - lr*cos(Heading(i)) - lw/2*sin(Heading(i));
-    wheels(i,8) = Y(i) - lr*sin(Heading(i)) + lw/2*cos(Heading(i));
-    if i ~= 1
-        V11(i) = sqrt( (wheels(i,1) - wheels(i-1,1))^2 + (wheels(i,2) - wheels(i-1,2))^2 )/dt;
-        V22(i) = sqrt( (wheels(i,3) - wheels(i-1,3))^2 + (wheels(i,4) - wheels(i-1,4))^2 )/dt;
-        V33(i) = sqrt( (wheels(i,5) - wheels(i-1,5))^2 + (wheels(i,6) - wheels(i-1,6))^2 )/dt;
-        V44(i) = sqrt( (wheels(i,7) - wheels(i-1,7))^2 + (wheels(i,8) - wheels(i-1,8))^2 )/dt;
-    end
-    w(i,:) = [V1(i)/rw, V2(i)/rw, V3(i)/rw, V4(i)/rw];
-    aw1(i) = V(i)/rw;
-    if rem(trajPhase, 2) == 0
-        V123 = abs(Anr(i)) * sqrt(lf^2 + (10+sign(Anr(i))*lw/2)^2); % 
-        aw1(i) = V123/rw;
-    end
+
     %% Measurements model
     % Odometer errors
     odo_error1 = odometer_error * sin(Time(i)/20);
@@ -305,3 +284,15 @@ plot(Time, V22, '--r', 'LineWidth', 0.5)
 % grid on
 % plot(Time, odo_w(i,1));
 % 
+% V11(500)/Anr(500)
+% V22(500)/Anr(500)
+% V11(500)/Anr(500) - V22(500)/Anr(500)
+% wf = atan(lw / 2/lf);
+% Lf = sqrt(lf^2 + 0.25*lw^2);
+% dR1 = sin(wf) * Lf / sin(pi - wf - (pi/2 - wf - gamma(500,1)))
+% dR1 = lw/2 / cos(gamma(500,1))
+% gip = sqrt(lf^2 + (10+lw/2)^2)
+% gip2= sqrt(lf^2 + (10-lw/2)^2)
+% V01 = Anr(500) * gip
+% V02 = Anr(500) * gip2
+% maybe = sin(pi/2+wf)/sin(pi/2-wf-gamma(500,1))*10
