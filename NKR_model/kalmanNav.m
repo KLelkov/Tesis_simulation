@@ -1,56 +1,92 @@
-function state_prime = ukfNav(state, sensors, update)
+function state_prime = kalmanNav(state, sensors, params)
     
     dt = sensors.dt;
-    tangf = tan(sensors.gammaf);
-    tangr = tan(sensors.gammar);
-    lsx = 0.15;
-    lsy = 0.05;
+    odo_omega = sensors.omega; % wheels rotation rate
+    odo_gamma = sensors.gamma; % front wheels rotation angle
+    avs_dpsi = sensors.gyro;
+    gps_x = sensors.gps_x;
+    gps_y = sensors.gps_y;
+    gps_dx = sensors.gps_dx;
+    gps_dy = sensors.gps_dy;
+
+    x = params.x;
+    y = params.y;
+    psi = params.heading;
+    dpsi = params.angular_rate;
+    vel = params.velocity; % velx vely
+    gamma = params.gamma; % 2 angles
+    betta = params.betta;
+    omega = params.omega;
+    
+    
+    lsx = -0.5;
+    lsy = 0.1;
     lf = 0.4;
     lr = 0.4;
-    lw = 0.3;
-    rw = 0.1;
-    U = [state.pos state.pos state.h state.v state.dh state.odo state.odo state.odo state.odo];
+    lw = 0.6;
+    rw = 0.254/2;
     
     
+    %% Kalman Prediction
+    F = zeros(16, 16);
+    F(1:2,1:4) = [1, 0, dt, 0;
+                  0, 1, 0, dt];
+    F(5,1:6) = [0, 0, 0, 0, 1, dt];
+    F(7:16,7:16) = eye(10);
+    % vel_x
+    F(3,7) = - 0.25 * omega(1) * rw * sin(betta(1) + gamma(1) + psi);
+    F(3,8) = - 0.25 * omega(2) * rw * sin(betta(2) + gamma(2) + psi);
+    F(3,9) = 0.25 * rw * cos(betta(1) + gamma(1) + psi);
+    F(3,10) = 0.25 * rw * cos(betta(2) + gamma(2) + psi);
+    F(3,11) = 0.25 * rw * cos(betta(3) + psi);
+    F(3,12) = 0.25 * rw * cos(betta(4) + psi);
+    F(3,13) = - 0.25 * omega(1) * rw * sin(betta(1) + gamma(1) + psi);
+    F(3,14) = - 0.25 * omega(2) * rw * sin(betta(2) + gamma(2) + psi);
+    F(3,15) = - 0.25 * omega(3) * rw * sin(betta(3) + psi);
+    F(3,16) = - 0.25 * omega(4) * rw * sin(betta(4) + psi);
+    % vel_y
+    F(4,7) = - 0.25 * omega(1) * rw * cos(betta(1) + gamma(1) + psi);
+    F(4,8) = - 0.25 * omega(2) * rw * cos(betta(2) + gamma(2) + psi);
+    F(4,9) = 0.25 * rw * sin(betta(1) + gamma(1) + psi);
+    F(4,10) = 0.25 * rw * sin(betta(2) + gamma(2) + psi);
+    F(4,11) = 0.25 * rw * sin(betta(3) + psi);
+    F(4,12) = 0.25 * rw * sin(betta(4) + psi);
+    F(4,13) = 0.25 * omega(1) * rw * cos(betta(1) + gamma(1) + psi);
+    F(4,14) = 0.25 * omega(2) * rw * cos(betta(2) + gamma(2) + psi);
+    F(4,15) = 0.25 * omega(3) * rw * cos(betta(3) + psi);
+    F(4,16) = 0.25 * omega(4) * rw * cos(betta(4) + psi);
+    % dpsi
+    V = 0.25 * rw * (omega(1) + omega(2) + omega(3) + omega(4));
+    Vxb = 0.25 * rw * (omega(1)*cos(betta(1)+gamma(1)) +...
+        omega(2)*cos(betta(2)+gamma(2))+...
+        omega(3)*cos(betta(3))+...
+        omega(4)*cos(betta(4)));
+    Vyb = 0.25 * rw * (omega(1)*sin(betta(1)+gamma(1)) +...
+        omega(2)*sin(betta(2)+gamma(2))+...
+        omega(3)*sin(betta(3))+...
+        omega(4)*sin(betta(4)));
+    B = atan2(Vyb, Vxb);
+    F(6,7) = V * cos(B) / (lf + lr) / cos(0.5*(gamma(1) + gamma(2)))^2 / 2;
+    F(6,8) = V * cos(B) / (lf + lr) / cos(0.5*(gamma(1) + gamma(2)))^2 / 2;
+    F(6,9) = 0.25 * rw * cos(B) / (lf + lr) * tan(0.5*(gamma(1) + gamma(2)));
+    F(6,10) = 0.25 * rw * cos(B) / (lf + lr) * tan(0.5*(gamma(1) + gamma(2)));
+    F(6,11) = 0.25 * rw * cos(B) / (lf + lr) * tan(0.5*(gamma(1) + gamma(2)));
+    F(6,12) = 0.25 * rw * cos(B) / (lf + lr) * tan(0.5*(gamma(1) + gamma(2)));
     
-    %% Unscented transform
-    dim = 9;
-    n = 2 * dim + 1; % number of sigma-points
-    k = 15;
-    a = 0.25;
-    l = a * a * (dim + k) - dim;
-    b = 2; % for gaussians
-    Xs = zeros(dim, n);
-    Ws = zeros(2, n);
-    Xprime = zeros(dim, 1);
-    Pprime = zeros(dim, dim);
+    U = [state.epos, state.epos, state.evel, state.evel, state.epsi, state.edpsi, ...
+        state.egamma, state.egamma, state.ew, state.ew, state.ew, state.ew, ...
+        state.eb, state.eb, state.eb, state.eb];
+    Q = diag(U);
     
-    % The first column repeats the state vector
-    Xs(:,1) = state.X; % mean
-    Shift = chol((dim+l)*state.P);
-    % For each parameter in X we need to calculate 18 additional
-    % sigma-points. This can be done by shifting the mean by values in the
-    % Shift matrix (that correlates with covariance matrix P)
-    for i = 1:dim
-        for j = 1:dim
-            Xs(i, j+1) = Xs(i,1) + Shift(i, j);
-            Xs(i, j+1 + dim) = Xs(i,1) - Shift(i, j);
-        end
-    end
-    % Now we need to compute weights for each sigma point in Xs.
-    % For each column in Xs we need mean_weight and covariance_weight
-    % The weights for the first column are the largest
-    Ws(1,1) = 1 / (dim + l);
-    Ws(2,1) = Ws(1,1) + (1 - a*a + b);
-    for i = 2:n
-        Ws(1,i) = 1 / (2*dim + 2*l);
-        Ws(2,i) = Ws(1,i);
-    end
-    % Normalize the weights
-    sumW1 = sum(Ws(1,:));
-    sumW2 = sum(Ws(2,:));
-    Ws(1,:) = Ws(1,:) ./ sumW1;
-    Ws(2,:) = Ws(2,:) ./ sumW2;
+    Xprime = F * state.X + U;
+    Pprime = F * state.P * F' + Q;
+    
+    %% Kalamn Correction GYRO
+    
+    %% Kalman Correction ODO
+    
+    
+    %% Kalman Correction GPS
     
     %% Prediction
     % Motion transform (apply system dynamic F)
