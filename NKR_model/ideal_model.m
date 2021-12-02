@@ -6,15 +6,10 @@ lw = 0.6;
 a = 0.05; % nkr wheel scaling for drawing purpose
 rw = 0.15;
 dt = 0.01;
-simTime = 20;
+simTime = 25;
 nSim = simTime / dt;
 
-wheel1.x = 0;
-wheel1.y = 0;
-wheel1.h = -pi/2;
 
-UGV.frame = [lf,0;lf,lw/2;lf+a,0;lf,-lw/2;lf,0; 0,0;0,0.02;0,-0.02; 0,0;-lr,0;-lr,-lw/2;-lr+a,0;-lr,lw/2; -lr, 0];
-Wheel.frame = [0.1,0.05; -0.1, 0.05; -0.1, -0.05; 0.1, -0.05; 0.1,0.05];
 %% Arrays init
 Time = zeros(nSim, 1);
 % NKR params
@@ -31,20 +26,15 @@ odo_w = zeros(nSim, 4);
 gps_pos = zeros(nSim, 2);
 gps_vel = zeros(nSim, 2);
 gyro_anr = zeros(nSim, 1);
+odo_gamma = zeros(nSim, 2);
 
 odo_coords = zeros(nSim, 3);
-wheels = zeros(nSim, 8);
 % store navigation solution
-% sol = zeros(nSim, 9);
-% sol key: [X Y Heading V dHeading w1 w2 w3 w4]
+
 V1 = zeros(nSim, 1);
 V2 = zeros(nSim, 1);
 V3 = zeros(nSim, 1);
 V4 = zeros(nSim, 1);
-V11 = zeros(nSim, 1);
-V22 = zeros(nSim, 1);
-V33 = zeros(nSim, 1);
-V44 = zeros(nSim, 1);
 
 trajPhase = 1;
 trajConst = 1.91;
@@ -64,23 +54,8 @@ gps_vel_error = 0.2; % m/s (max error)
 gps_vel_noise = 0.1; % m/s
 gyro_bias = normrnd(0, 0.1); % rad/s
 gyro_noise = 2*pi/180; % rad/s
+odo_gamma_noise = 0.002; % rad
 
-% init robot struct
-% robot.x = 0;
-% robot.y = 0;
-% robot.heading = 0;
-% robot.v = 0;
-% robot.dheading = 0;
-% robot.lf = 0.4;
-% robot.lr = 0.3;
-% robot.lw = 0.3;
-% robot.rw = 0.1;
-% robot.lsx = 0.15; % gnss antenna shift
-% robot.lsy = 0.05; % gnss antenna shift
-
-%init Kalman state struct
-% kalman_state.X = zeros(7,1);
-% kalman_state.P = diag([10 10 3 5 5 5 5]);
 
 %% Main cycle
 for i = 1:nSim
@@ -93,9 +68,6 @@ for i = 1:nSim
             trajTimer = trajTimer + 9; % 9 seconds for rotation arc
         else
             trajTimer = trajTimer + 2*trajConst; % 3.82 seconds for straight line
-        end
-        if rem(trajPhase, 5) == 0
-%             V(i) = V(i) - 1;
         end
     end
     gamma_mean = 0;
@@ -132,7 +104,8 @@ for i = 1:nSim
         V2(i) = abs(Anr(i)) * sqrt(lf^2 + ( Rc - lw/2 * sign(Anr(i)))^2);
         V3(i) = abs(Anr(i)) * sqrt(lf^2 + ( Rc + lw/2 * sign(Anr(i)))^2);
         V4(i) = abs(Anr(i)) * sqrt(lf^2 + ( Rc - lw/2 * sign(Anr(i)))^2);
-    end  
+    end
+    w(i,:) = [V1(i)/rw V2(i)/rw V3(i)/rw V4(i)/rw];
 
     %% True model parameters
     if i == 1
@@ -147,152 +120,72 @@ for i = 1:nSim
 
     %% Measurements model
     % Odometer errors
-    odo_error1 = odometer_error * sin(Time(i)/20);
-    odo_error2 = odometer_error * sin(Time(i)/16);
-    odo_error3 = odometer_error * sin(Time(i)/12);
+    odo_error1 = odometer_error * sin(Time(i)/25);
+    odo_error2 = odometer_error * sin(Time(i)/18);
+    odo_error3 = odometer_error * sin(Time(i)/11);
     odo_error4 = odometer_error * sin(Time(i)/8);
     odo_w(i,:) = [w(i,1) * (1 + odo_error1) + normrnd(0, odometer_noise),...
         w(i,2) * (1 + odo_error2) + normrnd(0, odometer_noise),...
         w(i,3) * (1 + odo_error3) + normrnd(0, odometer_noise),...
         w(i,4) * (1 + odo_error4) + normrnd(0, odometer_noise)];
+    gamma_error = gamma_mean + normrnd(0, odo_gamma_noise);
+    odo_gamma(i,1) = gamma_error - gamma_error^2*lw/(lf+lr);
+    odo_gamma(i,2) = gamma_error + gamma_error^2*lw/(lf+lr);
     % GPS position errors
-%     if rem(i,1/dt) == 0
-    gps_pos_errorX = gps_pos_error * sin(Time(i)/25);
-    gps_pos_errorY = gps_pos_error * cos(Time(i)/35);
-    gps_pos(i,:) = [X(i) + gps_pos_errorX + normrnd(0, gps_pos_noise),...
+    if rem(i, 50) == 0 || i == 1
+        gps_pos_errorX = gps_pos_error * sin(Time(i)/25);
+        gps_pos_errorY = gps_pos_error * cos(Time(i)/35);
+        gps_pos(i,:) = [X(i) + gps_pos_errorX + normrnd(0, gps_pos_noise),...
         Y(i) + gps_pos_errorY + normrnd(0, gps_pos_noise)];
-%     end
-    % GPS velocity errors
-%     if rem(i,1/dt) == 0
-    gps_vel_errorX = gps_vel_error * cos(Time(i)/15);
-    gps_vel_errorY = gps_vel_error * sin(Time(i)/8);
-    gps_vel(i,:) = [V(i)*cos(Heading(i)) + gps_vel_errorX + normrnd(0, gps_vel_noise),...
+        % GPS velocity errors
+        gps_vel_errorX = gps_vel_error * cos(Time(i)/15);
+        gps_vel_errorY = gps_vel_error * sin(Time(i)/8);
+        gps_vel(i,:) = [V(i)*cos(Heading(i)) + gps_vel_errorX + normrnd(0, gps_vel_noise),...
         V(i)*sin(Heading(i)) + gps_vel_errorY + normrnd(0, gps_vel_noise)];
-%     end
+    else
+        gps_pos(i,:) = gps_pos(i-1,:);
+        gps_vel(i,:) = gps_vel(i-1,:);
+    end
     % Gyroscope errors
     gyro_anr(i) = Anr(i) + gyro_bias + normrnd(0, gyro_noise);
     %% Baseline model
-%     odoV = rw/4 * (odo_w(i,1) + odo_w(i,2) + odo_w(i,3) + odo_w(i,4));
-%     odoBetta = atan( (lf*tan(gamma(i,6)) + lr*tan(gamma(i,5)))/(lf + lr) );
-%     odoAnr = odoV * cos(odoBetta) / (lr + lf) * (tan(gamma(i,5)) - tan(gamma(i,6)));
-%     odoHeading = odoHeading + odoAnr*dt;
-%     odoX = odoX + odoV*cos(odoHeading + odoBetta)*dt;
-%     odoY = odoY + odoV*sin(odoHeading + odoBetta)*dt;
-%     odo_coords(i,:) = [odoX, odoY, odoHeading];
-%     update.gps = 0;
-%     update.gyro = 0;
-%     if (rem(i,1) == 0)
-%         update.gyro = 1;
-%     end
-%     if (rem(i, 100) == 0)
-%         update.gps = 1;
-%     end
-%     % init sensors struct
-%     sensors.gps_error_pos = 2.0;
-%     sensors.gps_error_vel = 0.2;
-%     sensors.gyro_error = 2*pi/180;
-%     sensors.dt = dt;
-%     sensors.gps_x = gps_pos(i,1);
-%     sensors.gps_y = gps_pos(i,2);
-%     sensors.gps_dx = gps_vel(i,1);
-%     sensors.gps_dy = gps_vel(i,2);
-%     sensors.gyro = gyro_anr(i);
-%     % update robot struct
-%     robot.w1 = odo_w(i,1);
-%     robot.w2 = odo_w(i,2);
-%     robot.w3 = odo_w(i,3);
-%     robot.w4 = odo_w(i,4);
-%     robot.betta = odoBetta;
-%     robot.gammaf = gamma(i,6);
-%     robot.gammar = gamma(i,5);
-    % call Kalman dilter
-%     [robot, kalman_state] = navSys(robot, kalman_state, sensors, update);
-%     sol(i,:) = [robot.x robot.y robot.heading robot.v robot.dheading robot.w1 robot.w2 robot.w3 robot.w4];
-    % sol key: [X Y Heading V dHeading w1 w2 w3 w4]
-    %% Animation
 
 end
 
 
 
-an = figure('Name', 'Robot trajectory');
+figure('Name', 'Robot trajectory');
 plot(Y,X, 'b', 'LineWidth', 1.0)
-hold on
-% plot(odo_coords(:,2),odo_coords(:,1), 'r', 'LineWidth', 0.5)
-% plot(gps_pos(:,2),gps_pos(:,1), 'g', 'LineWidth', 0.5)
-% plot(wheels(:,4), wheels(:,3), 'k', 'LineWidth', 0.25)
-plot(wheels(:,2), wheels(:,1), 'g', 'LineWidth', 0.25)
-% plot(wheels(:,6), wheels(:,5), 'c', 'LineWidth', 0.25)
-% plot(wheels(:,8), wheels(:,7), 'y', 'LineWidth', 0.25)
-
 axis equal
 grid on
+hold on
+plot(gps_pos(:,2), gps_pos(:,1), 'r', 'LineWidth', 1.0)
 
-% UGVframe = rotateVectorImage2D(UGV.frame, Heading(end));
-% frame1 = drawVectorImage2D(UGVframe, [Y(end) X(end)], an, 'r');
-% Wheelframe = rotateVectorImage2D(Wheel.frame, Heading(end) + gamma(end,1));
-% frame2 = drawVectorImage2D(Wheelframe, [wheels(end,2) wheels(end,1)], an, 'm');
-% Wheelframe = rotateVectorImage2D(Wheel.frame, Heading(end) + gamma(end,2));
-% frame3 = drawVectorImage2D(Wheelframe, [wheels(end,4) wheels(end,3)], an, 'm');
-% Wheelframe = rotateVectorImage2D(Wheel.frame, Heading(end) + gamma(end,3));
-% frame4 = drawVectorImage2D(Wheelframe, [wheels(end,6) wheels(end,5)], an, 'm');
-% Wheelframe = rotateVectorImage2D(Wheel.frame, Heading(end) + gamma(end,4));
-% frame5 = drawVectorImage2D(Wheelframe, [wheels(end,8) wheels(end,7)], an, 'm');
+figure('Name', 'Robot rotation velocity');
+plot(Time, Anr, 'b', 'LineWidth', 1.0)
+grid on
+hold on
+plot(Time, gyro_anr, 'r', 'LineWidth', 1.0)
 
-figure
-plot(Time, V1, 'b', 'LineWidth', 0.5)
-hold on; grid on
-plot(Time, V2, 'r', 'LineWidth', 0.5)
-plot(Time, V11, '--b', 'LineWidth', 0.5)
-plot(Time, V22, '--r', 'LineWidth', 0.5)
-% 
-% figure;
-% plot(Time, w, 'b')
-% hold on
-% grid on
-% plot(Time, odo_w, 'r');
-% 
-% figure;
-% plot(Time, Anr, 'b')
-% hold on
-% grid on
-% plot(Time, gyro_anr, 'r');
+figure('Name', 'Robot velocity');
+plot(Time, V, 'b', 'LineWidth', 1.0)
+grid on
+hold on
+plot(Time, sqrt(gps_vel(:,1).^2 + gps_vel(:,2).^2), 'r', 'LineWidth', 1.0)
 
+figure('Name', 'Encoder readings');
+plot(Time, w(:,1), 'b', 'LineWidth', 1.0)
+grid on
+hold on
+plot(Time, odo_w(:,1), 'r', 'LineWidth', 1.0)
 
-% UGVframe = rotateVectorImage2D(UGV.frame, pi/4);
-% graph = figure;
-% axis equal
-% drawVectorImage2D(UGVframe, [1 10], graph, 'r');
+figure('Name', 'Gamma readings');
+plot(Time, gamma(:,1), 'b', 'LineWidth', 1.0)
+grid on
+hold on
+plot(Time, gamma(:,2), 'r', 'LineWidth', 1.0)
+plot(Time, odo_gamma(:,1), '--b', 'LineWidth', 1.0)
+plot(Time, odo_gamma(:,2), '--r', 'LineWidth', 1.0)
 
-% figure;
-% plot([Time(1) Time(end)], [V V], 'b')
-% hold on
-% grid on
-% plot(Time, asssb, 'r');
+clearvars -except odo_gamma Time odo_w gps_vel gps_pos gyro_anr
 
-% an = figure('Name', 'Robot trajectory');
-% plot(odo_coords(:,2), odo_coords(:,1), 'b', 'LineWidth', 1.0)
-% grid on
-% axis equal
-% hold on
-% plot(gps_pos(:,2), gps_pos(:,1), 'r', 'LineWidth', 1.0)
-% plot(sol(:,2), sol(:,1), 'k', 'LineWidth', 1.0)
-% 
-% figure;
-% plot(Time, sol(6), 'r');
-% hold on
-% grid on
-% plot(Time, odo_w(i,1));
-% 
-% V11(500)/Anr(500)
-% V22(500)/Anr(500)
-% V11(500)/Anr(500) - V22(500)/Anr(500)
-% wf = atan(lw / 2/lf);
-% Lf = sqrt(lf^2 + 0.25*lw^2);
-% dR1 = sin(wf) * Lf / sin(pi - wf - (pi/2 - wf - gamma(500,1)))
-% dR1 = lw/2 / cos(gamma(500,1))
-% gip = sqrt(lf^2 + (10+lw/2)^2)
-% gip2= sqrt(lf^2 + (10-lw/2)^2)
-% V01 = Anr(500) * gip
-% V02 = Anr(500) * gip2
-% maybe = sin(pi/2+wf)/sin(pi/2-wf-gamma(500,1))*10
