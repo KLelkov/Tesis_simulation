@@ -6,7 +6,7 @@ lw = 0.6;
 a = 0.05; % nkr wheel scaling for drawing purpose
 rw = 0.15;
 dt = 0.01;
-simTime = 25;
+simTime = 55;
 nSim = simTime / dt;
 
 
@@ -20,7 +20,7 @@ X = zeros(nSim, 1);
 Y = zeros(nSim, 1);
 w = zeros(nSim, 4);
 gamma = zeros(nSim, 2);
-betta = zeros(nSim, 5);
+Betta = zeros(nSim, 4);
 % Measurements
 odo_w = zeros(nSim, 4);
 gps_pos = zeros(nSim, 2);
@@ -56,6 +56,12 @@ gyro_bias = normrnd(0, 0.1); % rad/s
 gyro_noise = 2*pi/180; % rad/s
 odo_gamma_noise = 0.002; % rad
 
+%% Slipping parameters
+slipping_period1 = 30;
+slipping_period2 = 55;
+slipping_amp1 = 0.02;
+slipping_amp2 = -0.03;
+
 
 %% Main cycle
 for i = 1:nSim
@@ -71,18 +77,32 @@ for i = 1:nSim
         end
     end
     gamma_mean = 0;
+    
+    % slipping angles
+    Betta(i,1) = slipping_amp1 * sin(Time(i)/slipping_period1);
+    Betta(i,2) = slipping_amp2 * cos(Time(i)/slipping_period2);
+    Betta(i,3) = slipping_amp2 * sin(Time(i)/slipping_period1);
+    Betta(i,4) = slipping_amp1 * sin(Time(i)/slipping_period2);
+    
     if rem(trajPhase, 2) ~= 0 % odd phase
         Anr(i) = 0;
         gamma(i,:) = [0, 0];
     else                        % even phase
         if rem(trajPhase, 4) == 2
 %             Anr(i) = pi/6; % turn right on every 2nd phase
-            gamma_mean = 0.0799;% will be equal to 0.5236 rad/s
+            % gamma_mean + (betta1 + betta2)/2 = atan(tanval)
+            % tanval - tan((betta3 + betta4)/2) = tan(0.0799)
+            % tanval = tan(gamma_mean + (betta1 + betta2)/2)
+            tanval =  tan(0.0799) + tan((Betta(i,3) + Betta(i,4)) / 2);
+            gamma_mean = atan(tanval) - (Betta(i,1) + Betta(i,2)) / 2;
+%             gamma_mean = 0.0799 ;% will be equal to 0.5236 rad/s
             gamma(i,1) = gamma_mean - gamma_mean^2*lw/(lf+lr);
             gamma(i,2) = gamma_mean + gamma_mean^2*lw/(lf+lr);
         else
 %             Anr(i) = -pi/6; % turn left on every 4th phase
-            gamma_mean = -0.0799; % will be equal to -0.5236 rad/s
+            %gamma_mean = -0.0799; % will be equal to -0.5236 rad/s
+            tanval =  tan(-0.0799) + tan((Betta(i,3) + Betta(i,4)) / 2);
+            gamma_mean = atan(tanval) - (Betta(i,1) + Betta(i,2)) / 2;
             gamma(i,1) = gamma_mean - gamma_mean^2*lw/(lf+lr);
             gamma(i,2) = gamma_mean + gamma_mean^2*lw/(lf+lr);
         end
@@ -91,11 +111,12 @@ for i = 1:nSim
     % Linear speed of each wheel
     V1(i) = V(i); V2(i) = V(i); V3(i) = V(i); V4(i) = V(i);
     A1 = 0; A2 = 0; A3 = 0; A4 = 0;
-       
-    Vxb = 0.25 * ( V(i)*cos(gamma(i,1)) + V(i)*cos(gamma(i,2)) + V(i) + V(i));
-    Vyb = 0.25 * ( V(i)*sin(gamma(i,1)) + V(i)*sin(gamma(i,2)));
-    betta(i) = atan(Vyb/Vxb);
-    Anr(i) = V(i)*cos(betta(i))*tan(gamma_mean) / (lf + lr);
+    
+
+    Vxb = 0.25 * ( V(i)*cos(gamma(i,1) + Betta(i,1)) + V(i)*cos(gamma(i,2) + Betta(i,2)) + V(i)*cos(Betta(i,3)) + V(i)*cos(Betta(i,4)));
+    Vyb = 0.25 * ( V(i)*sin(gamma(i,1) + Betta(i,1)) + V(i)*sin(gamma(i,2) + Betta(i,2)) + V(i)*sin(Betta(i,3)) + V(i)*sin(Betta(i,4)));
+    B = atan(Vyb/Vxb);
+    Anr(i) = V(i)*cos(B)*(tan(gamma_mean + 0.5*Betta(i,1) + 0.5*Betta(i,2)) - tan(0.5*Betta(i,3) + 0.5*Betta(i,4))) / (lf + lr);
     Rc = abs(V(i) / Anr(i));
     
     % If robot is turning - they differ
@@ -114,8 +135,8 @@ for i = 1:nSim
         Heading(i) = 0;
     else
         Heading(i) = Heading(i-1) + Anr(i)*dt;
-        X(i) = X(i-1) + V(i)*cos(Heading(i) + betta(i))*dt;
-        Y(i) = Y(i-1) + V(i)*sin(Heading(i) + betta(i))*dt;
+        X(i) = X(i-1) + V(i)*cos(Heading(i) + B)*dt;
+        Y(i) = Y(i-1) + V(i)*sin(Heading(i) + B)*dt;
     end  
 
     %% Measurements model
@@ -166,18 +187,22 @@ plot(Time, Anr, 'b', 'LineWidth', 1.0)
 grid on
 hold on
 plot(Time, gyro_anr, 'r', 'LineWidth', 1.0)
+legend Anr Gyro
 
 figure('Name', 'Robot velocity');
 plot(Time, V, 'b', 'LineWidth', 1.0)
 grid on
 hold on
 plot(Time, sqrt(gps_vel(:,1).^2 + gps_vel(:,2).^2), 'r', 'LineWidth', 1.0)
+legend V gpsVel
 
 figure('Name', 'Encoder readings');
 plot(Time, w(:,1), 'b', 'LineWidth', 1.0)
 grid on
 hold on
+plot(Time, w(:,2), '--b', 'LineWidth', 1.0)
 plot(Time, odo_w(:,1), 'r', 'LineWidth', 1.0)
+legend omega1 omega2 odo1
 
 figure('Name', 'Gamma readings');
 plot(Time, gamma(:,1), 'b', 'LineWidth', 1.0)
@@ -186,6 +211,7 @@ hold on
 plot(Time, gamma(:,2), 'r', 'LineWidth', 1.0)
 plot(Time, odo_gamma(:,1), '--b', 'LineWidth', 1.0)
 plot(Time, odo_gamma(:,2), '--r', 'LineWidth', 1.0)
+legend gamma1 gamma2 odo1 odo2
 
-clearvars -except odo_gamma Time odo_w gps_vel gps_pos gyro_anr
+clearvars -except odo_gamma Time odo_w gps_vel gps_pos gyro_anr X Y Heading Betta
 
