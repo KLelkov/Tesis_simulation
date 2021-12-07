@@ -1,4 +1,4 @@
-function state_prime = kalmanNav(state, sensors, params)
+function [state_prime, params] = kalmanNav(state, sensors, params)
     
     dt = sensors.dt;
     odo_omega = sensors.omega; % wheels rotation rate
@@ -86,11 +86,11 @@ function state_prime = kalmanNav(state, sensors, params)
         Z = [avs_dpsi - dpsi];
         H = zeros(1,16);
         H(5) = -1;
-        R = [sensros.egyro];
+        R = [sensors.egyro];
         I = eye(16);
         Y = Z - H * Xprime;
-        S = H * P * H' + R;
-        K = P * H' * inv(S);
+        S = H * Pprime * H' + R;
+        K = Pprime * H' * inv(S);
         Xprime = Xprime + K * Y;
         Pprime = (I - K * H) * Pprime;
     end
@@ -107,14 +107,14 @@ function state_prime = kalmanNav(state, sensors, params)
         H(1,5) = -(lsx * sin(psi) + lsy * cos(psi));
         H(2,5) = lsx * cos(psi) - lsy * sin(psi);
         H(3:4,3:4) = eye(2);
-        H(3,5) = - (dpsi * lsx * sinz(psi) + dpsi * lsy * cos(psi));
+        H(3,5) = - (dpsi * lsx * sin(psi) + dpsi * lsy * cos(psi));
         H(3,6) = lsx * cos(psi) - lsy * sin(psi);
         H(4,5) = dpsi * lsx * cos(psi) - dpsi * lsy * sin(psi);
         H(4,6) = lsx * sin(psi) + lsy * cos(psi);
         I = eye(16);
         Y = Z - H * Xprime;
-        S = H * P * H' + R;
-        K = P * H' * inv(S);
+        S = H * Pprime * H' + R;
+        K = Pprime * H' * inv(S);
         Xprime = Xprime + K * Y;
         Pprime = (I - K * H) * Pprime;
     end
@@ -125,8 +125,8 @@ function state_prime = kalmanNav(state, sensors, params)
     
     params.x = params.x - Xprime(1);
     params.y = params.y - Xprime(2);
-    params.vel(1) = Vxb - Xprime(3);
-    params.vel(2) = Vyb - Xprime(4);
+    params.velocity(1) = Vxb - Xprime(3);
+    params.velocity(2) = Vyb - Xprime(4);
     params.heading = params.heading + params.angular_rate * dt - Xprime(5);
     params.angular_rate = V * cos(B) * tan(0.5 * (gamma(1) + gamma(2))) / (lr + lf) - Xprime(6);
     params.gamma(1) = odo_gamma - odo_gamma^2 * lw / (lf + lr) - Xprime(7);
