@@ -4,7 +4,7 @@ lf = 0.4;
 lr = 0.4;
 lw = 0.6;
 a = 0.05; % nkr wheel scaling for drawing purpose
-rw = 0.15;
+rw = 0.254/2;
 dt = 0.01;
 simTime = 55;
 nSim = simTime / dt;
@@ -26,7 +26,7 @@ odo_w = zeros(nSim, 4);
 gps_pos = zeros(nSim, 2);
 gps_vel = zeros(nSim, 2);
 gyro_anr = zeros(nSim, 1);
-odo_gamma = zeros(nSim, 2);
+odo_gamma = zeros(nSim, 1);
 
 odo_coords = zeros(nSim, 3);
 % store navigation solution
@@ -46,15 +46,15 @@ odoHeading = 0;
 
 
 %% Measurement errors parameters
-odometer_error = 0.03; % percent (max error)
-odometer_noise = 0.1; % rad/sec
+odometer_error = 0.00; % percent (max error)
+odometer_noise = 0.0; % rad/sec
 gps_pos_error = 2.0; % meters (max error)
 gps_pos_noise = 0.75; % meters
 gps_vel_error = 0.2; % m/s (max error)
 gps_vel_noise = 0.1; % m/s
-gyro_bias = normrnd(0, 0.1); % rad/s
+gyro_bias = 0;%normrnd(0, 0.1); % rad/s
 gyro_noise = 2*pi/180; % rad/s
-odo_gamma_noise = 0.002; % rad
+odo_gamma_noise = 0.000; % rad
 
 %% Slipping parameters
 slipping_period1 = 30;
@@ -149,9 +149,9 @@ for i = 1:nSim
         w(i,2) * (1 + odo_error2) + normrnd(0, odometer_noise),...
         w(i,3) * (1 + odo_error3) + normrnd(0, odometer_noise),...
         w(i,4) * (1 + odo_error4) + normrnd(0, odometer_noise)];
-    gamma_error = gamma_mean + normrnd(0, odo_gamma_noise);
-    odo_gamma(i,1) = gamma_error - gamma_error^2*lw/(lf+lr);
-    odo_gamma(i,2) = gamma_error + gamma_error^2*lw/(lf+lr);
+    odo_gamma(i) = gamma_mean + normrnd(0, odo_gamma_noise);
+%     odo_gamma(i) = gamma_error - gamma_error^2*lw/(lf+lr);
+%     odo_gamma(i,2) = gamma_error + gamma_error^2*lw/(lf+lr);
     % GPS position errors
     if rem(i, 50) == 0 || i == 1
         gps_pos_errorX = gps_pos_error * sin(Time(i)/25);
@@ -209,9 +209,9 @@ plot(Time, gamma(:,1), 'b', 'LineWidth', 1.0)
 grid on
 hold on
 plot(Time, gamma(:,2), 'r', 'LineWidth', 1.0)
-plot(Time, odo_gamma(:,1), '--b', 'LineWidth', 1.0)
-plot(Time, odo_gamma(:,2), '--r', 'LineWidth', 1.0)
-legend gamma1 gamma2 odo1 odo2
+plot(Time, odo_gamma, 'g', 'LineWidth', 1.0)
+% plot(Time, odo_gamma(:,2), '--r', 'LineWidth', 1.0)
+legend gamma1 gamma2 odo
 
-clearvars -except odo_gamma Time odo_w gps_vel gps_pos gyro_anr X Y Heading Betta
+clearvars -except odo_gamma Time odo_w gps_vel gps_pos gyro_anr X Y Heading Betta V Anr
 

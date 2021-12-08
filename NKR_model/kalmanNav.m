@@ -72,10 +72,12 @@ function [state_prime, params] = kalmanNav(state, sensors, params)
     F(6,10) = 0.25 * rw * cos(B) / (lf + lr) * tan(0.5*(gamma(1) + gamma(2)));
     F(6,11) = 0.25 * rw * cos(B) / (lf + lr) * tan(0.5*(gamma(1) + gamma(2)));
     F(6,12) = 0.25 * rw * cos(B) / (lf + lr) * tan(0.5*(gamma(1) + gamma(2)));
+
+%     F(7:16,7:16) = eye(10);
     
     U = [state.epos, state.epos, state.evel, state.evel, state.epsi, state.edpsi, ...
         state.egamma, state.egamma, state.ew, state.ew, state.ew, state.ew, ...
-        state.eb, state.eb, state.eb, state.eb];
+        state.eb, state.eb, state.eb, state.eb]';
     Q = diag(U);
     
     Xprime = F * state.X + U;
@@ -85,7 +87,7 @@ function [state_prime, params] = kalmanNav(state, sensors, params)
     if (sensors.gyro_update == 1)
         Z = [avs_dpsi - dpsi];
         H = zeros(1,16);
-        H(5) = -1;
+        H(6) = -1;
         R = [sensors.egyro];
         I = eye(16);
         Y = Z - H * Xprime;
@@ -123,21 +125,22 @@ function [state_prime, params] = kalmanNav(state, sensors, params)
     state_prime.P = Pprime;
     state_prime.X = Xprime;
     
-    params.x = params.x - Xprime(1);
-    params.y = params.y - Xprime(2);
-    params.velocity(1) = Vxb - Xprime(3);
-    params.velocity(2) = Vyb - Xprime(4);
-    params.heading = params.heading + params.angular_rate * dt - Xprime(5);
-    params.angular_rate = V * cos(B) * tan(0.5 * (gamma(1) + gamma(2))) / (lr + lf) - Xprime(6);
-    params.gamma(1) = odo_gamma - odo_gamma^2 * lw / (lf + lr) - Xprime(7);
-    params.gamma(2) = odo_gamma + odo_gamma^2 * lw / (lf + lr) - Xprime(8);
-    params.omega(1) = odo_omega(1) - Xprime(9);
-    params.omega(2) = odo_omega(2) - Xprime(10);
-    params.omega(3) = odo_omega(3) - Xprime(11);
-    params.omega(4) = odo_omega(4) - Xprime(12);
-    params.betta(1) = params.betta(1) - Xprime(13);
-    params.betta(2) = params.betta(2) - Xprime(14);
-    params.betta(3) = params.betta(3) - Xprime(15);
-    params.betta(4) = params.betta(4) - Xprime(16);
+    params.x = params.x + params.velocity(1)*dt;% - Xprime(1);
+    params.y = params.y + params.velocity(2)*dt;% - Xprime(2);
+    params.velocity(1) = V * cos(params.heading);% - Xprime(3);
+    params.velocity(2) = V * sin(params.heading);% - Xprime(4);
+    params.heading = params.heading + params.angular_rate * dt;% - Xprime(5);
+    params.angular_rate = V * cos(B) * (tan(0.5 * (gamma(1) + gamma(2) + betta(1) + betta(2))) - tan(0.5*(betta(3) + betta(4)))) / (lr + lf);% - Xprime(6);
+%     params.angular_rate = V * cos(B) * tan(0.5 * (gamma(1) + gamma(2))) / (lr + lf) - Xprime(6);
+    params.gamma(1) = odo_gamma - odo_gamma^2 * lw / (lf + lr);% - Xprime(7);
+    params.gamma(2) = odo_gamma + odo_gamma^2 * lw / (lf + lr);% - Xprime(8);
+    params.omega(1) = odo_omega(1);% - Xprime(9);
+    params.omega(2) = odo_omega(2);% - Xprime(10);
+    params.omega(3) = odo_omega(3);% - Xprime(11);
+    params.omega(4) = odo_omega(4);% - Xprime(12);
+    params.betta(1) = params.betta(1);% - Xprime(13);
+    params.betta(2) = params.betta(2);% - Xprime(14);
+    params.betta(3) = params.betta(3);% - Xprime(15);
+    params.betta(4) = params.betta(4);% - Xprime(16);
 end
 
