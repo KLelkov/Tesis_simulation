@@ -32,48 +32,63 @@ function [state_prime, params] = kalmanNav(state, sensors, params)
     F(1:2,1:4) = [1, 0, dt, 0;
                   0, 1, 0, dt];
     F(5,1:6) = [0, 0, 0, 0, 1, dt];
-    F(7:16,7:16) = eye(10);
-    % vel_x
+    F(9:16,9:16) = eye(8);
+    % vel_xg -----
+    % psi
+    F(3,5) = -0.25 * rw * (omega(1)*sin(betta(1) + gamma(1) + psi) + ...
+        omega(2)*sin(betta(2) + gamma(2) + psi) + ...
+        omega(3)*sin(betta(3) + psi) + omega(4)*sin(betta(4) + psi));
+    % gamma 1,2
     F(3,7) = - 0.25 * omega(1) * rw * sin(betta(1) + gamma(1) + psi);
     F(3,8) = - 0.25 * omega(2) * rw * sin(betta(2) + gamma(2) + psi);
+    % omega 1,2,3,4
     F(3,9) = 0.25 * rw * cos(betta(1) + gamma(1) + psi);
     F(3,10) = 0.25 * rw * cos(betta(2) + gamma(2) + psi);
     F(3,11) = 0.25 * rw * cos(betta(3) + psi);
     F(3,12) = 0.25 * rw * cos(betta(4) + psi);
+    % betta 1,2,3,4
     F(3,13) = - 0.25 * omega(1) * rw * sin(betta(1) + gamma(1) + psi);
     F(3,14) = - 0.25 * omega(2) * rw * sin(betta(2) + gamma(2) + psi);
     F(3,15) = - 0.25 * omega(3) * rw * sin(betta(3) + psi);
     F(3,16) = - 0.25 * omega(4) * rw * sin(betta(4) + psi);
-    % vel_y
-    F(4,7) = - 0.25 * omega(1) * rw * cos(betta(1) + gamma(1) + psi);
-    F(4,8) = - 0.25 * omega(2) * rw * cos(betta(2) + gamma(2) + psi);
+    % vel_yg -----
+    % psi
+    F(4,5) = 0.25 * rw * (omega(1)*cos(betta(1) + gamma(1) + psi) + ...
+        omega(2)*cos(betta(2) + gamma(2) + psi) + ...
+        omega(3)*cos(betta(3) + psi) + omega(4)*cos(betta(4) + psi));
+    % gamma 1,2
+    F(4,7) = 0.25 * omega(1) * rw * cos(betta(1) + gamma(1) + psi);
+    F(4,8) = 0.25 * omega(2) * rw * cos(betta(2) + gamma(2) + psi);
+    % omega 1,2,3,4
     F(4,9) = 0.25 * rw * sin(betta(1) + gamma(1) + psi);
     F(4,10) = 0.25 * rw * sin(betta(2) + gamma(2) + psi);
     F(4,11) = 0.25 * rw * sin(betta(3) + psi);
     F(4,12) = 0.25 * rw * sin(betta(4) + psi);
+    % betta 1,2,3,4
     F(4,13) = 0.25 * omega(1) * rw * cos(betta(1) + gamma(1) + psi);
     F(4,14) = 0.25 * omega(2) * rw * cos(betta(2) + gamma(2) + psi);
     F(4,15) = 0.25 * omega(3) * rw * cos(betta(3) + psi);
     F(4,16) = 0.25 * omega(4) * rw * cos(betta(4) + psi);
     % dpsi
-    V = 0.25 * rw * (omega(1) + omega(2) + omega(3) + omega(4));
-    Vxb = 0.25 * rw * (omega(1)*cos(betta(1)+gamma(1)) +...
-        omega(2)*cos(betta(2)+gamma(2))+...
-        omega(3)*cos(betta(3))+...
-        omega(4)*cos(betta(4)));
-    Vyb = 0.25 * rw * (omega(1)*sin(betta(1)+gamma(1)) +...
-        omega(2)*sin(betta(2)+gamma(2))+...
-        omega(3)*sin(betta(3))+...
-        omega(4)*sin(betta(4)));
-    B = atan2(Vyb, Vxb);
-    F(6,7) = V * cos(B) / (lf + lr) / cos(0.5*(gamma(1) + gamma(2)))^2 / 2;
-    F(6,8) = V * cos(B) / (lf + lr) / cos(0.5*(gamma(1) + gamma(2)))^2 / 2;
-    F(6,9) = 0.25 * rw * cos(B) / (lf + lr) * tan(0.5*(gamma(1) + gamma(2)));
-    F(6,10) = 0.25 * rw * cos(B) / (lf + lr) * tan(0.5*(gamma(1) + gamma(2)));
-    F(6,11) = 0.25 * rw * cos(B) / (lf + lr) * tan(0.5*(gamma(1) + gamma(2)));
-    F(6,12) = 0.25 * rw * cos(B) / (lf + lr) * tan(0.5*(gamma(1) + gamma(2)));
-
-%     F(7:16,7:16) = eye(10);
+    
+    V = sqrt(vel(1)^2 + vel(2)^2);
+    B = atan2(vel(2), vel(1)) - psi;
+    F(6,7) = 0.5 * V * cos(B) / (lf + lr) / cos(0.5*(gamma(1) + gamma(2) + betta(1) + betta(2)))^2;
+    F(6,8) = 0.5 * V * cos(B) / (lf + lr) / cos(0.5*(gamma(1) + gamma(2) + betta(1) + betta(2)))^2;
+    F(6,9) = 0.25 * rw * cos(B) / (lf + lr) * ( tan(0.5*(gamma(1) + gamma(2) + betta(1) + betta(2))) - tan(0.5*(betta(3) + betta(4))) );
+    F(6,10) = 0.25 * rw * cos(B) / (lf + lr) * ( tan(0.5*(gamma(1) + gamma(2) + betta(1) + betta(2))) - tan(0.5*(betta(3) + betta(4))) );
+    F(6,11) = 0.25 * rw * cos(B) / (lf + lr) * ( tan(0.5*(gamma(1) + gamma(2) + betta(1) + betta(2))) - tan(0.5*(betta(3) + betta(4))) );
+    F(6,12) = 0.25 * rw * cos(B) / (lf + lr) * ( tan(0.5*(gamma(1) + gamma(2) + betta(1) + betta(2))) - tan(0.5*(betta(3) + betta(4))) );
+    F(6,13) = 0.5 * V * cos(B) / (lf + lr) / cos(0.5*(gamma(1) + gamma(2) + betta(1) + betta(2)))^2;
+    F(6,14) = 0.5 * V * cos(B) / (lf + lr) / cos(0.5*(gamma(1) + gamma(2) + betta(1) + betta(2)))^2;
+    F(6,15) = 0.5 * V * cos(B) / (lf + lr) / cos(0.5*(betta(3) + betta(4)))^2;
+    F(6,16) = 0.5 * V * cos(B) / (lf + lr) / cos(0.5*(betta(3) + betta(4)))^2;
+    
+    
+    F(7,7) = (0.5 - 2 * lw / (lf + lr) * 0.5 * (gamma(1) + gamma(2)));
+    F(7,8) = (0.5 - 2 * lw / (lf + lr) * 0.5 * (gamma(1) + gamma(2)));
+    F(8,7) = (0.5 + 2 * lw / (lf + lr) * 0.5 * (gamma(1) + gamma(2)));
+    F(8,8) = (0.5 + 2 * lw / (lf + lr) * 0.5 * (gamma(1) + gamma(2)));
     
     U = [state.epos, state.epos, state.evel, state.evel, state.epsi, state.edpsi, ...
         state.egamma, state.egamma, state.ew, state.ew, state.ew, state.ew, ...
@@ -125,10 +140,23 @@ function [state_prime, params] = kalmanNav(state, sensors, params)
     state_prime.P = Pprime;
     state_prime.X = Xprime;
     
+    V = 0.25 * rw * (omega(1) + omega(2) + omega(3) + omega(4));
+    Vxb = 0.25 * rw * (omega(1)*cos(betta(1)+gamma(1)) +...
+        omega(2)*cos(betta(2)+gamma(2))+...
+        omega(3)*cos(betta(3))+...
+        omega(4)*cos(betta(4)));
+    Vyb = 0.25 * rw * (omega(1)*sin(betta(1)+gamma(1)) +...
+        omega(2)*sin(betta(2)+gamma(2))+...
+        omega(3)*sin(betta(3))+...
+        omega(4)*sin(betta(4)));
+    B = atan2(Vyb, Vxb);
+    
     params.x = params.x + params.velocity(1)*dt;% - Xprime(1);
     params.y = params.y + params.velocity(2)*dt;% - Xprime(2);
-    params.velocity(1) = V * cos(params.heading);% - Xprime(3);
-    params.velocity(2) = V * sin(params.heading);% - Xprime(4);
+%     params.velocity(1) = V * cos(params.heading);% - Xprime(3);
+%     params.velocity(2) = V * sin(params.heading);% - Xprime(4);
+    params.velocity(1) = Vxb * cos(params.heading) - Vyb * sin(params.heading);% - Xprime(3);
+    params.velocity(2) = Vxb * sin(params.heading) + Vyb * cos(params.heading);
     params.heading = params.heading + params.angular_rate * dt;% - Xprime(5);
     params.angular_rate = V * cos(B) * (tan(0.5 * (gamma(1) + gamma(2) + betta(1) + betta(2))) - tan(0.5*(betta(3) + betta(4)))) / (lr + lf);% - Xprime(6);
 %     params.angular_rate = V * cos(B) * tan(0.5 * (gamma(1) + gamma(2))) / (lr + lf) - Xprime(6);

@@ -1,6 +1,6 @@
-[fX, fY, fHeading, fVelocity, fRate, fBetta] = test_navigation(Time, odo_gamma, gyro_anr, gps_pos, gps_vel, odo_w);
+[fX, fY, fHeading, fVelocity, fRate, fBetta, state] = test_navigation(Time, odo_gamma, gyro_anr, gps_pos, gps_vel, odo_w);
 
-limit = 1000;
+limit = 3000;
 close all
 figure
 plot(fY(1:limit),fX(1:limit), 'b');
@@ -30,6 +30,8 @@ title('Angular Rate')
 grid on
 hold on
 plot(Time(1:limit), Anr(1:limit), 'k')
+plot(Time(1:limit), fRate(1:limit) - state(1:limit, 6), 'r')
+% plot(Time(1:limit), gyro_anr(1:limit), 'c')
 
 figure;
 plot(Time(1:limit), fBetta(1:limit, 1), 'b')
