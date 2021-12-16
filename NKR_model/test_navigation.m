@@ -5,11 +5,12 @@ function [X, Y, Heading, Velocity, Rate, Betta, vect] = test_navigation(time, ga
     X = zeros(len, 1);
     Y = zeros(len, 1);
     Heading = zeros(len, 1);
-    Velocity = zeros(len, 1);
+    Velocity = zeros(len, 2);
     Rate = zeros(len, 1);
     Betta = zeros(len, 4);
     
     vect = zeros(len, 16);
+%     velc = zeros(len, 1);
     
     
     % init sensors struct
@@ -23,11 +24,11 @@ function [X, Y, Heading, Velocity, Rate, Betta, vect] = test_navigation(time, ga
     kalman_state.X(3) = 0; % set initial heading
     kalman_state.P = diag([100 100 2 2 3 1 1 1 10 10 10 10 1 1 1 1]);
     kalman_state.epos = 2e-5;
-    kalman_state.epsi = 1e-4;
+    kalman_state.epsi = 1e-6;
     kalman_state.evel = 3e-3;
     kalman_state.edpsi = 2e-4;
     kalman_state.ew = 1e-2;%8e-3;
-    kalman_state.eb = 1e-8;%8e-3;
+    kalman_state.eb = 5e-6;%8e-3;
     kalman_state.egamma = 4e-6;%8e-3;
 
     
@@ -51,7 +52,7 @@ function [X, Y, Heading, Velocity, Rate, Betta, vect] = test_navigation(time, ga
     nav_params.betta(4) = 0;
     
     
-    limit = 3000;
+    limit = 5000;
     for i = 1:limit
        
         sensors.gamma = gamma(i);
@@ -73,11 +74,13 @@ function [X, Y, Heading, Velocity, Rate, Betta, vect] = test_navigation(time, ga
         [kalman_state, nav_params] = kalmanNav(kalman_state, sensors, nav_params);
         X(i) = nav_params.x;
         Y(i) = nav_params.y;
-        Heading(i) = nav_params.heading;
-        Rate(i) = nav_params.angular_rate;
-        Velocity(i)= sqrt(nav_params.velocity(1)^2 + nav_params.velocity(2)^2);
+        Heading(i) = nav_params.heading;% - 2*kalman_state.X(5);
+        Rate(i) = nav_params.angular_rate;% - 2*kalman_state.X(6);
+        Velocity(i,1)=nav_params.velocity(1);
+        Velocity(i,2)=nav_params.velocity(2);
         Betta(i,:) = nav_params.betta;
         vect(i,:) = kalman_state.X;
+%         velc(i)= sqrt((nav_params.velocity(1) - kalman_state.X(3))^2 + (nav_params.velocity(2) - kalman_state.X(4))^2);
         
     end
 %     close all

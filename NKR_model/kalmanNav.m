@@ -135,10 +135,11 @@ function [state_prime, params] = kalmanNav(state, sensors, params)
         Xprime = Xprime + K * Y;
         Pprime = (I - K * H) * Pprime;
     end
-    
+    %%
     state_prime = state;
     state_prime.P = Pprime;
     state_prime.X = Xprime;
+    
     
     V = 0.25 * rw * (omega(1) + omega(2) + omega(3) + omega(4));
     Vxb = 0.25 * rw * (omega(1)*cos(betta(1)+gamma(1)) +...
@@ -157,7 +158,10 @@ function [state_prime, params] = kalmanNav(state, sensors, params)
 %     params.velocity(2) = V * sin(params.heading);% - Xprime(4);
     params.velocity(1) = Vxb * cos(params.heading) - Vyb * sin(params.heading);% - Xprime(3);
     params.velocity(2) = Vxb * sin(params.heading) + Vyb * cos(params.heading);
-    params.heading = params.heading + params.angular_rate * dt;% - Xprime(5);
+    % TODO: figure out whats the difference between substracting X(5) at
+    % each step, or substracting two arrays in the end
+    params.heading = params.heading + params.angular_rate * dt;% + Xprime(5);
+%     params.heading = angle_lim(params.heading, [-2*pi, 2*pi]);
     params.angular_rate = V * cos(B) * (tan(0.5 * (gamma(1) + gamma(2) + betta(1) + betta(2))) - tan(0.5*(betta(3) + betta(4)))) / (lr + lf);% - Xprime(6);
 %     params.angular_rate = V * cos(B) * tan(0.5 * (gamma(1) + gamma(2))) / (lr + lf) - Xprime(6);
     params.gamma(1) = odo_gamma - odo_gamma^2 * lw / (lf + lr);% - Xprime(7);
