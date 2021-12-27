@@ -69,8 +69,8 @@ function [state_prime, params] = kalmanNav(state, sensors, params)
     F(4,14) = 0.25 * omega(2) * rw * cos(betta(2) + gamma(2) + psi);
     F(4,15) = 0.25 * omega(3) * rw * cos(betta(3) + psi);
     F(4,16) = 0.25 * omega(4) * rw * cos(betta(4) + psi);
-    % dpsi
     
+    % dpsi ---
     V = sqrt(vel(1)^2 + vel(2)^2);
     B = atan2(vel(2), vel(1)) - psi;
     F(6,7) = 0.5 * V * cos(B) / (lf + lr) / cos(0.5*(gamma(1) + gamma(2) + betta(1) + betta(2)))^2;
@@ -84,12 +84,48 @@ function [state_prime, params] = kalmanNav(state, sensors, params)
     F(6,15) = 0.5 * V * cos(B) / (lf + lr) / cos(0.5*(betta(3) + betta(4)))^2;
     F(6,16) = 0.5 * V * cos(B) / (lf + lr) / cos(0.5*(betta(3) + betta(4)))^2;
     
+    % dgamma1 ---
+    F(7,7) = 0.5 - 2 * lw / (lf + lr) * 0.5;% * (gamma(1) + gamma(2)));
+    F(7,8) = 0.5 - 2 * lw / (lf + lr) * 0.5;% * (gamma(1) + gamma(2)));
     
-    F(7,7) = (0.5 - 2 * lw / (lf + lr) * 0.5 * (gamma(1) + gamma(2)));
-    F(7,8) = (0.5 - 2 * lw / (lf + lr) * 0.5 * (gamma(1) + gamma(2)));
-    F(8,7) = (0.5 + 2 * lw / (lf + lr) * 0.5 * (gamma(1) + gamma(2)));
-    F(8,8) = (0.5 + 2 * lw / (lf + lr) * 0.5 * (gamma(1) + gamma(2)));
+%     cosf = 2 * cos(0.5*(gamma(1) + gamma(2) + betta(1) + betta(2)))^2;
+%     cosr = 2 * cos(0.5*(betta(3) + betta(4)))^2;
+%     tanfr = tan(0.5*(gamma(1) + gamma(2) + betta(1) + betta(2))) - tan(0.5*(betta(3) + betta(4)));
+%     % dpsi
+%     F(7,6) = (lf + lr) * cosf / V / cos(B);
+%     % dgamma2
+%     F(7,8) = -1;
+%     % domega
+%     F(7,9) = - 0.25 * rw / V * cosf * tanfr;
+%     F(7,10) = - 0.25 * rw / V * cosf * tanfr;
+%     F(7,11) = - 0.25 * rw / V * cosf * tanfr;
+%     F(7,12) = - 0.25 * rw / V * cosf * tanfr;
+%     % dbetta
+%     F(7,13) = -1;
+%     F(7,14) = -1;
+%     F(7,15) = cosf / cosr;
+%     F(7,16) = cosf / cosr;
     
+    % dgamma2 ---
+    F(8,7) = 0.5 + 2 * lw / (lf + lr) * 0.5;% * (gamma(1) + gamma(2)));
+    F(8,8) = 0.5 + 2 * lw / (lf + lr) * 0.5;% * (gamma(1) + gamma(2)));
+%     % dpsi
+%     F(8,6) = (lf + lr) * cosf / V / cos(B);
+%     % dgamma1
+%     F(8,7) = -1;
+%     % domega
+%     F(8,9) = - 0.25 * rw / V * cosf * tanfr;
+%     F(8,10) = - 0.25 * rw / V * cosf * tanfr;
+%     F(8,11) = - 0.25 * rw / V * cosf * tanfr;
+%     F(8,12) = - 0.25 * rw / V * cosf * tanfr;
+%     % dbetta
+%     F(8,13) = -1;
+%     F(8,14) = -1;
+%     F(8,15) = cosf / cosr;
+%     F(8,16) = cosf / cosr;
+
+
+
     U = [state.epos, state.epos, state.evel, state.evel, state.epsi, state.edpsi, ...
         state.egamma, state.egamma, state.ew, state.ew, state.ew, state.ew, ...
         state.eb, state.eb, state.eb, state.eb]';

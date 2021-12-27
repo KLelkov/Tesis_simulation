@@ -1,4 +1,4 @@
-function [X, Y, Heading, Velocity, Rate, Betta, vect] = test_navigation(time, gamma, Gyro, gps_pos, gps_vel, omega)
+function [X, Y, Heading, Velocity, Rate, Betta, vect, Omega, Gamma] = test_navigation(time, gamma, Gyro, gps_pos, gps_vel, omega)
     len = length(time);
     sensors.dt = 0.01;
 
@@ -8,6 +8,8 @@ function [X, Y, Heading, Velocity, Rate, Betta, vect] = test_navigation(time, ga
     Velocity = zeros(len, 2);
     Rate = zeros(len, 1);
     Betta = zeros(len, 4);
+    Omega = zeros(len, 4);
+    Gamma = zeros(len, 2);
     
     vect = zeros(len, 16);
 %     velc = zeros(len, 1);
@@ -27,9 +29,9 @@ function [X, Y, Heading, Velocity, Rate, Betta, vect] = test_navigation(time, ga
     kalman_state.epsi = 1e-6;
     kalman_state.evel = 3e-3;
     kalman_state.edpsi = 2e-4;
-    kalman_state.ew = 1e-2;%8e-3;
+    kalman_state.ew = 1e-6;%8e-3;
     kalman_state.eb = 5e-6;%8e-3;
-    kalman_state.egamma = 4e-6;%8e-3;
+    kalman_state.egamma = 2e-4;%8e-3;
 
     
     
@@ -79,6 +81,8 @@ function [X, Y, Heading, Velocity, Rate, Betta, vect] = test_navigation(time, ga
         Velocity(i,1)=nav_params.velocity(1);
         Velocity(i,2)=nav_params.velocity(2);
         Betta(i,:) = nav_params.betta;
+        Omega(i,:) = nav_params.omega;
+        Gamma(i,:) = nav_params.gamma;
         vect(i,:) = kalman_state.X;
 %         velc(i)= sqrt((nav_params.velocity(1) - kalman_state.X(3))^2 + (nav_params.velocity(2) - kalman_state.X(4))^2);
         

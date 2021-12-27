@@ -59,8 +59,8 @@ odo_gamma_noise = 0.000; % rad
 %% Slipping parameters
 slipping_period1 = 30;
 slipping_period2 = 55;
-slipping_amp1 = 0.02;
-slipping_amp2 = -0.03;
+slipping_amp1 = 0;%0.02;
+slipping_amp2 = 0;%-0.03;
 
 
 %% Main cycle
@@ -213,5 +213,5 @@ plot(Time, odo_gamma, 'g', 'LineWidth', 1.0)
 % plot(Time, odo_gamma(:,2), '--r', 'LineWidth', 1.0)
 legend gamma1 gamma2 odo
 
-clearvars -except odo_gamma Time odo_w gps_vel gps_pos gyro_anr X Y Heading Betta V Anr
+clearvars -except odo_gamma Time odo_w gps_vel gps_pos gyro_anr X Y Heading Betta V Anr w gamma
 

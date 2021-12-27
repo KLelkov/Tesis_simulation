@@ -1,4 +1,4 @@
-[fX, fY, fHeading, fVelocity, fRate, fBetta, state] = test_navigation(Time, odo_gamma, gyro_anr, gps_pos, gps_vel, odo_w);
+[fX, fY, fHeading, fVelocity, fRate, fBetta, state, fOmega, fGamma] = test_navigation(Time, odo_gamma, gyro_anr, gps_pos, gps_vel, odo_w);
 
 limit = 5000;
 close all
@@ -42,7 +42,24 @@ hold on
 plot(Time(1:limit), Anr(1:limit), 'k')
 plot(Time(1:limit), fRate(1:limit) - state(1:limit, 6), 'r')
 legend raw real corrected
-plot(Time(1:limit), gyro_anr(1:limit), 'c')
+% plot(Time(1:limit), gyro_anr(1:limit), 'c')
+
+figure;
+plot(Time(1:limit), fOmega(1:limit, 1), 'b', 'LineWidth', 1.5)
+title('Omega')
+grid on
+hold on
+plot(Time(1:limit), w(1:limit, 1), 'k')
+plot(Time(1:limit), - state(1:limit, 9), 'r')
+
+figure;
+plot(Time(1:limit), fGamma(1:limit, 1), 'b', 'LineWidth', 1.5)
+title('Gamma')
+grid on
+hold on
+plot(Time(1:limit), gamma(1:limit, 1), 'k')
+plot(Time(1:limit), fGamma(1:limit, 1) - state(1:limit, 7), 'r')
+plot(Time(1:limit), odo_gamma(1:limit, 1), 'c')
 
 figure;
 plot(Time(1:limit), -state(1:limit, 13), 'b')
