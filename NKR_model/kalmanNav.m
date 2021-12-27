@@ -150,7 +150,7 @@ function [state_prime, params] = kalmanNav(state, sensors, params)
     
     %% Kalman Correction GPS
     if (sensors.gps_update == 1)
-        Z = [gps_x - x - lsx * cos(psi) + lsy + sin(psi);
+        Z = [gps_x - x - lsx * cos(psi) + lsy * sin(psi);
             gps_y - y - lsx * sin(psi) - lsy * cos(psi);
             gps_dx - vel(1);
             gps_dy - vel(2)];
