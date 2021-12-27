@@ -27,9 +27,9 @@ function [X, Y, Heading, Velocity, Rate, Betta, vect, Omega, Gamma] = test_ukf(t
     kalman_state.X = zeros(17,1);
     kalman_state.X(5) = 0; % set initial heading
     kalman_state.P = diag([100 100 3 3 3 2 1 1 100 100 100 100 1 1 1 1 2]);
-    kalman_state.epos = 2e-2;
+    kalman_state.epos = 2e-1;
     kalman_state.epsi = 1e-4;
-    kalman_state.evel = 3e-3;
+    kalman_state.evel = 3e-2;
     kalman_state.edpsi = 1e-2;
     kalman_state.ew = 1e-4;%8e-3;
     kalman_state.eb = 5e-4;%8e-3;
@@ -49,7 +49,7 @@ function [X, Y, Heading, Velocity, Rate, Betta, vect, Omega, Gamma] = test_ukf(t
         sensors.gps_dy = gps_vel(i,2);
         sensors.gps_update = 0;
         if i > 1 && gps_pos(i) ~= gps_pos(i-1)
-%             sensors.gps_update = 1;
+            sensors.gps_update = 1;
         end
         
         sensors.gyro = Gyro(i);
