@@ -48,7 +48,7 @@ odoHeading = 0;
 
 %% Measurement errors parameters
 odometer_error = 0.00; % percent (max error)
-odometer_noise = 0.0; % rad/sec
+odometer_noise = 0.1; % rad/sec
 gps_pos_error = 2.0; % meters (max error)
 gps_pos_noise = 0.75; % meters
 gps_vel_error = 0.2; % m/s (max error)
@@ -60,8 +60,8 @@ odo_gamma_noise = 0.010; % rad
 %% Slipping parameters
 slipping_period1 = 30;
 slipping_period2 = 55;
-slipping_amp1 = 0;%0.02;
-slipping_amp2 = 0;%-0.03;
+slipping_amp1 = 0.02;
+slipping_amp2 = -0.03;
 
 
 %% Main cycle
