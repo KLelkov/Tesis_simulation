@@ -111,8 +111,8 @@ function [state_prime] = forwardUKF(state, sensors)
         Xs(15,j) = Xs(15,j); % Betta3
         Xs(16,j) = Xs(16,j); % Betta4
         
-%         Xs(17,j) = atan( (lf * tan( 0.5*(Xs(15,j) + Xs(16,j)) ) + lr * tan( 0.5*(Xs(7,j) + Xs(8,j) + Xs(13,j) + Xs(14,j)) )) / (lf + lr) ); % Kappa
-        Xs(17,j) = atan2(Xs(4,j), Xs(3,j)) - Xs(5,j);
+        Xs(17,j) = atan( (lf * tan( 0.5*(Xs(15,j) + Xs(16,j)) ) + lr * tan( 0.5*(Xs(7,j) + Xs(8,j) + Xs(13,j) + Xs(14,j)) )) / (lf + lr) ); % Kappa
+%         Xs(17,j) = 0;%atan2(Xs(4,j), Xs(3,j)) - Xs(5,j);
     end
     
     %% Reverse unscented transform

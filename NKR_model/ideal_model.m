@@ -27,6 +27,7 @@ gps_pos = zeros(nSim, 2);
 gps_vel = zeros(nSim, 2);
 gyro_anr = zeros(nSim, 1);
 odo_gamma = zeros(nSim, 1);
+Kappa = zeros(nSim, 1);
 
 odo_coords = zeros(nSim, 3);
 % store navigation solution
@@ -54,7 +55,7 @@ gps_vel_error = 0.2; % m/s (max error)
 gps_vel_noise = 0.1; % m/s
 gyro_bias = 0;%normrnd(0, 0.1); % rad/s
 gyro_noise = 2*pi/180; % rad/s
-odo_gamma_noise = 0.010; % rad
+odo_gamma_noise = 0;%0.010; % rad
 
 %% Slipping parameters
 slipping_period1 = 30;
@@ -118,6 +119,7 @@ for i = 1:nSim
     B = atan(Vyb/Vxb);
     Anr(i) = V(i)*cos(B)*(tan(gamma_mean + 0.5*Betta(i,1) + 0.5*Betta(i,2)) - tan(0.5*Betta(i,3) + 0.5*Betta(i,4))) / (lf + lr);
     Rc = abs(V(i) / Anr(i));
+    Kappa(i) = B;
     
     % If robot is turning - they differ
     if rem(trajPhase, 2) == 0
@@ -213,5 +215,5 @@ plot(Time, odo_gamma, 'g', 'LineWidth', 1.0)
 % plot(Time, odo_gamma(:,2), '--r', 'LineWidth', 1.0)
 legend gamma1 gamma2 odo
 
-clearvars -except odo_gamma Time odo_w gps_vel gps_pos gyro_anr X Y Heading Betta V Anr w gamma
+clearvars -except Kappa odo_gamma Time odo_w gps_vel gps_pos gyro_anr X Y Heading Betta V Anr w gamma
 
