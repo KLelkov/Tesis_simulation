@@ -17,7 +17,7 @@ plot(Time(1:limit), fHeading(1:limit), 'b')
 title('Heading')
 grid on
 hold on
-plot(Time(1:limit), Heading(1:limit), 'k')
+plot(Time(1:limit), wrapToPi(Heading(1:limit)), 'k')
 % plot(Time(1:limit), fHeading(1:limit) - state(1:limit, 5), 'r')
 % 
 % legend raw real corrected
@@ -60,15 +60,16 @@ plot(Time(1:limit), odo_w(1:limit, 1), 'c')
 % plot(Time(1:limit), - state(1:limit, 9), 'r')
 % 
 figure;
-plot(Time(1:limit), fGamma(1:limit, 1), 'b', 'LineWidth', 1.5)
+plot(Time(1:limit), gamma(1:limit, 1), 'k')
+
 title('Gamma')
 grid on
 hold on
-plot(Time(1:limit), fGamma(1:limit, 2), '--b', 'LineWidth', 1.5)
-plot(Time(1:limit), gamma(1:limit, 1), 'k')
 plot(Time(1:limit), gamma(1:limit, 2), '--k')
 % plot(Time(1:limit), fGamma(1:limit, 1) - state(1:limit, 7), 'r')
 plot(Time(1:limit), odo_gamma(1:limit, 1) , 'c')
+plot(Time(1:limit), fGamma(1:limit, 1), 'b', 'LineWidth', 1.5)
+plot(Time(1:limit), fGamma(1:limit, 2), '--b', 'LineWidth', 1.5)
 legend filter true sensor
 % 
 figure;

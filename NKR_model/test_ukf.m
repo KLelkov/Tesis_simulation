@@ -19,10 +19,10 @@ function [X, Y, Heading, Velocity, Rate, Betta, vect, Omega, Gamma, Kappa] = tes
     % init sensors struct
     sensors.odo_error = 1e-1;
     sensors.egyro = 4e-2;
-    sensors.egps_pos = 1e0;
-    sensors.egps_vel = 5e-1;
+    sensors.egps_pos = 2e0;
+    sensors.egps_vel = 8e-1;
     sensors.eodow = 4e-2;
-    sensors.eodog = 1e-4;
+    sensors.eodog = 6e-4;
     
     %init Kalman state struct
     kalman_state.X = zeros(17,1);
@@ -34,7 +34,7 @@ function [X, Y, Heading, Velocity, Rate, Betta, vect, Omega, Gamma, Kappa] = tes
     kalman_state.edpsi = 1e-2;
     kalman_state.ew = 1e-1;%8e-3;
     kalman_state.eb = 5e-4;%8e-3;
-    kalman_state.egamma = 2e-4;%8e-3;
+    kalman_state.egamma = 1e-3;%8e-3;
     kalman_state.ek = 1e-4;
 
     

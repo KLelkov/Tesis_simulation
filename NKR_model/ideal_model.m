@@ -55,7 +55,7 @@ gps_vel_error = 0.2; % m/s (max error)
 gps_vel_noise = 0.1; % m/s
 gyro_bias = 0;%normrnd(0, 0.1); % rad/s
 gyro_noise = 2*pi/180; % rad/s
-odo_gamma_noise = 0;%0.010; % rad
+odo_gamma_noise = 0.010; % rad
 
 %% Slipping parameters
 slipping_period1 = 30;
