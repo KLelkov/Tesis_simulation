@@ -27,13 +27,13 @@ function [X, Y, Heading, Velocity, Rate, Betta, vect, Omega, Gamma, Kappa] = tes
     %init Kalman state struct
     kalman_state.X = zeros(17,1);
     kalman_state.X(5) = 0; % set initial heading
-    kalman_state.P = diag([100 100 3 3 3 2 1 1 100 100 100 100 1 1 1 1 0.1]);
+    kalman_state.P = diag([100 100 3 3 3 2 1 1 100 100 100 100 1 1 1 1 0.5]);
     kalman_state.epos = 2e-1;
     kalman_state.epsi = 2e-2;
     kalman_state.evel = 8e-1;
     kalman_state.edpsi = 1e-2;
     kalman_state.ew = 1e-1;%8e-3;
-    kalman_state.eb = 5e-4;%8e-3;
+    kalman_state.eb = 8e-4;%8e-3;
     kalman_state.egamma = 1e-3;%8e-3;
     kalman_state.ek = 1e-4;
 

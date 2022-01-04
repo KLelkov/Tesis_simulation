@@ -81,6 +81,8 @@ title('Betta')
 grid on
 hold on
 plot(Time(1:limit), fBetta(1:limit, 1), 'b')
+plot(Time(1:limit), Betta(1:limit,2), '--k')
+plot(Time(1:limit), fBetta(1:limit, 2), '--b')
 
 figure;
 plot(Time(1:limit), Kappa(1:limit, 1), 'k', 'LineWidth', 1.5)
@@ -88,3 +90,11 @@ title('Kappa')
 grid on
 hold on
 plot(Time(1:limit), fKappa(1:limit, 1), 'b', 'LineWidth', 1.5)
+
+
+
+error = sqrt( (fY - Y).^2 + (fX - X).^2 );
+figure
+title ('Localization error')
+plot(Time, error, 'b');
+grid on
