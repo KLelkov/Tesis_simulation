@@ -1,6 +1,6 @@
 [fX, fY, fHeading, fVelocity, fRate, fBetta, state, fOmega, fGamma, fKappa] = test_ukf(Time, odo_gamma, gyro_anr, gps_pos, gps_vel, odo_w);
 
-limit = 1000;
+limit = 5500;
 close all
 
 figure
@@ -51,14 +51,17 @@ legend sense real filt
 
 % 
 figure;
-plot(Time(1:limit), fOmega(1:limit, 1), 'b', 'LineWidth', 1.5)
+plot(Time(1:limit), odo_w(1:limit, 1), 'c')
 title('Omega')
 grid on
 hold on
 plot(Time(1:limit), w(1:limit, 1), 'k')
-plot(Time(1:limit), odo_w(1:limit, 1), 'c')
+
+plot(Time(1:limit), fOmega(1:limit, 1), 'b', 'LineWidth', 1.5)
 % plot(Time(1:limit), - state(1:limit, 9), 'r')
 % 
+
+
 figure;
 plot(Time(1:limit), gamma(1:limit, 1), 'k')
 

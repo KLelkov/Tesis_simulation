@@ -38,7 +38,7 @@ function [X, Y, Heading, Velocity, Rate, Betta, vect, Omega, Gamma, Kappa] = tes
     kalman_state.ek = 1e-4;
 
     
-    limit = 1000;
+    limit = 5500;
     for i = 1:limit
        
         sensors.gamma = gamma(i);
