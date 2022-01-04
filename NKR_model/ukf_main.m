@@ -1,6 +1,6 @@
 [fX, fY, fHeading, fVelocity, fRate, fBetta, state, fOmega, fGamma, fKappa] = test_ukf(Time, odo_gamma, gyro_anr, gps_pos, gps_vel, odo_w);
 
-limit = 5500;
+limit = 10000;
 close all
 
 figure
@@ -81,8 +81,8 @@ title('Betta')
 grid on
 hold on
 plot(Time(1:limit), fBetta(1:limit, 1), 'b')
-plot(Time(1:limit), Betta(1:limit,2), '--k')
-plot(Time(1:limit), fBetta(1:limit, 2), '--b')
+plot(Time(1:limit), Betta(1:limit, 3), '--k')
+plot(Time(1:limit), fBetta(1:limit, 3), '--b')
 
 figure;
 plot(Time(1:limit), Kappa(1:limit, 1), 'k', 'LineWidth', 1.5)

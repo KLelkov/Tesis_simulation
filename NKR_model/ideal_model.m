@@ -6,7 +6,7 @@ lw = 0.6;
 a = 0.05; % nkr wheel scaling for drawing purpose
 rw = 0.254/2;
 dt = 0.01;
-simTime = 55;
+simTime = 100;
 nSim = simTime / dt;
 
 
@@ -47,14 +47,14 @@ odoHeading = 0;
 
 
 %% Measurement errors parameters
-odometer_error = 0.00; % percent (max error)
+odometer_error = 0.0; % percent (max error)
 odometer_noise = 0.1; % rad/sec
 gps_pos_error = 2.0; % meters (max error)
 gps_pos_noise = 0.75; % meters
-gps_vel_error = 0.2; % m/s (max error)
+gps_vel_error = 0.4; % m/s (max error)
 gps_vel_noise = 0.1; % m/s
 gyro_bias = 0;%normrnd(0, 0.1); % rad/s
-gyro_noise = 2*pi/180; % rad/s
+gyro_noise = 3*pi/180; % rad/s
 odo_gamma_noise = 0.010; % rad
 
 %% Slipping parameters

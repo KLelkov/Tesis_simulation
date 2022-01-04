@@ -18,9 +18,9 @@ function [X, Y, Heading, Velocity, Rate, Betta, vect, Omega, Gamma, Kappa] = tes
     
     % init sensors struct
     sensors.odo_error = 1e-1;
-    sensors.egyro = 4e-2;
-    sensors.egps_pos = 2e0;
-    sensors.egps_vel = 8e-1;
+    sensors.egyro = 6e-2;
+    sensors.egps_pos = 8e0;
+    sensors.egps_vel = 15e-1;
     sensors.eodow = 4e-2;
     sensors.eodog = 6e-4;
     
@@ -31,14 +31,14 @@ function [X, Y, Heading, Velocity, Rate, Betta, vect, Omega, Gamma, Kappa] = tes
     kalman_state.epos = 5e-1;
     kalman_state.epsi = 1e-2;
     kalman_state.evel = 8e-1;
-    kalman_state.edpsi = 1e-2;
+    kalman_state.edpsi = 6e-3;
     kalman_state.ew = 1e-1;%8e-3;
-    kalman_state.eb = 8e-4;%8e-3;
+    kalman_state.eb = 2e-3;%8e-3;
     kalman_state.egamma = 1e-3;%8e-3;
     kalman_state.ek = 1e-4;
 
     
-    limit = 5500;
+    limit = 10000;
     for i = 1:limit
        
         sensors.gamma = gamma(i);
@@ -50,7 +50,7 @@ function [X, Y, Heading, Velocity, Rate, Betta, vect, Omega, Gamma, Kappa] = tes
         sensors.gps_dy = gps_vel(i,2);
         sensors.gps_update = 0;
         if i > 1 && gps_pos(i) ~= gps_pos(i-1)
-%             sensors.gps_update = 1;
+            sensors.gps_update = 1;
         end
         
         sensors.gyro = Gyro(i);
