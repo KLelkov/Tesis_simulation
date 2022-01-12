@@ -1,6 +1,7 @@
 [fX, fY, fHeading, fVelocity, fRate, fBetta, state, fOmega, fGamma, fKappa] = test_ukf(Time, odo_gamma, gyro_anr, gps_pos, gps_vel, odo_w);
 
-limit = 10000;
+% limit = 10000;
+limit = length(Time);
 close all
 
 figure
@@ -98,3 +99,11 @@ figure
 title ('Localization error')
 plot(Time, error, 'b');
 grid on
+
+
+% 
+figure;
+plot(Time(1:limit), wrapToPi(fHeading(1:limit) -  wrapToPi(Heading(1:limit))), 'b')
+title('Heading error')
+grid on
+hold on

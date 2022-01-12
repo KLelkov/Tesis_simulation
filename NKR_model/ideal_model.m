@@ -125,8 +125,8 @@ for i = 1:nSim
     if rem(trajPhase, 2) == 0
         V1(i) = abs(Anr(i)) * sqrt(lf^2 + ( Rc + lw/2 * sign(Anr(i)))^2);
         V2(i) = abs(Anr(i)) * sqrt(lf^2 + ( Rc - lw/2 * sign(Anr(i)))^2);
-        V3(i) = abs(Anr(i)) * sqrt(lf^2 + ( Rc + lw/2 * sign(Anr(i)))^2);
-        V4(i) = abs(Anr(i)) * sqrt(lf^2 + ( Rc - lw/2 * sign(Anr(i)))^2);
+        V3(i) = abs(Anr(i)) * sqrt(lr^2 + ( Rc + lw/2 * sign(Anr(i)))^2);
+        V4(i) = abs(Anr(i)) * sqrt(lr^2 + ( Rc - lw/2 * sign(Anr(i)))^2);
     end
     w(i,:) = [V1(i)/rw V2(i)/rw V3(i)/rw V4(i)/rw];
 
@@ -155,6 +155,7 @@ for i = 1:nSim
 %     odo_gamma(i) = gamma_error - gamma_error^2*lw/(lf+lr);
 %     odo_gamma(i,2) = gamma_error + gamma_error^2*lw/(lf+lr);
     % GPS position errors
+    % TODO: receiver dislocation
     if rem(i, 50) == 0 || i == 1
         gps_pos_errorX = gps_pos_error * sin(Time(i)/25);
         gps_pos_errorY = gps_pos_error * cos(Time(i)/35);
@@ -185,10 +186,11 @@ hold on
 plot(gps_pos(:,2), gps_pos(:,1), 'r', 'LineWidth', 1.0)
 
 figure('Name', 'Robot rotation velocity');
-plot(Time, Anr, 'b', 'LineWidth', 1.0)
+plot(Time, gyro_anr, 'r', 'LineWidth', 1.0)
 grid on
 hold on
-plot(Time, gyro_anr, 'r', 'LineWidth', 1.0)
+
+plot(Time, Anr, 'b', 'LineWidth', 1.0)
 legend Anr Gyro
 
 figure('Name', 'Robot velocity');
@@ -199,19 +201,30 @@ plot(Time, sqrt(gps_vel(:,1).^2 + gps_vel(:,2).^2), 'r', 'LineWidth', 1.0)
 legend V gpsVel
 
 figure('Name', 'Encoder readings');
-plot(Time, w(:,1), 'b', 'LineWidth', 1.0)
+plot(Time, odo_w(:,1), 'r', 'LineWidth', 1.0)
 grid on
 hold on
+plot(Time, odo_w(:,2), '--r', 'LineWidth', 1.0)
 plot(Time, w(:,2), '--b', 'LineWidth', 1.0)
-plot(Time, odo_w(:,1), 'r', 'LineWidth', 1.0)
-legend omega1 omega2 odo1
+plot(Time, w(:,1), 'b', 'LineWidth', 1.0)
+% legend omega1 omega2 odo1
+
+figure('Name', 'Encoder readings');
+plot(Time, odo_w(:,3), 'r', 'LineWidth', 1.0)
+grid on
+hold on
+plot(Time, odo_w(:,4), '--r', 'LineWidth', 1.0)
+plot(Time, w(:,4), '--b', 'LineWidth', 1.0)
+plot(Time, w(:,3), 'b', 'LineWidth', 1.0)
+% legend omega1 omega2 odo1
 
 figure('Name', 'Gamma readings');
-plot(Time, gamma(:,1), 'b', 'LineWidth', 1.0)
+
+plot(Time, odo_gamma, 'r', 'LineWidth', 1.0)
 grid on
 hold on
-plot(Time, gamma(:,2), 'r', 'LineWidth', 1.0)
-plot(Time, odo_gamma, 'g', 'LineWidth', 1.0)
+plot(Time, gamma(:,2), '--b', 'LineWidth', 1.0)
+plot(Time, gamma(:,1), 'b', 'LineWidth', 1.0)
 % plot(Time, odo_gamma(:,2), '--r', 'LineWidth', 1.0)
 legend gamma1 gamma2 odo
 

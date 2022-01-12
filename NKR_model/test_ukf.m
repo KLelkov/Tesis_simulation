@@ -39,6 +39,7 @@ function [X, Y, Heading, Velocity, Rate, Betta, vect, Omega, Gamma, Kappa] = tes
 
     
     limit = 10000;
+    limit = len;
     for i = 1:limit
        
         sensors.gamma = gamma(i);
