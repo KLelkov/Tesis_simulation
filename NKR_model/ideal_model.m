@@ -47,7 +47,7 @@ V4 = zeros(nSim, 1);
 
 trajPhase = 1;
 trajConst = 1.91;
-trajTimer = 1.91;
+trajTimer = 33.9539;
 
 odoX = 0;
 odoY = 0;
@@ -72,50 +72,57 @@ slipping_amp1 = 0.017;
 slipping_amp2 = -0.025;
 
 
+r = 30;
+fprintf("Trajectory len: %.1f\n", (1.5*pi*r + 2*r)*2);
+
+
 %% Main cycle
 for i = 1:nSim
     Time(i) = i * dt;
-    V(i) = 5.236 / 3; % constant velocity
+    V(i) = 1.7671; % constant velocity
     %% Motion setup
     if Time(i) >= trajTimer
         trajPhase = trajPhase + 1;
         if rem(trajPhase, 2) == 0
-            trajTimer = trajTimer + 9 ; % 9 seconds for rotation arc
+            trajTimer = trajTimer + 80 ; % 9 seconds for rotation arc
             
         else
-            trajTimer = trajTimer + 2*trajConst*2 * 3; % 3.82 seconds for straight line
+            trajTimer = trajTimer + 33.9539*2; % 16.9765 seconds for straight line
             
         end
     end
     gamma_mean = 0;
     
     % slipping angles
-%     Betta(i,1) = -slipping_amp1 * sin(Time(i)/slipping_period1);
-%     Betta(i,2) = slipping_amp2 * cos(Time(i)/slipping_period2);
-%     Betta(i,3) = -slipping_amp2 * sin(Time(i)/slipping_period1);
-%     Betta(i,4) = slipping_amp1 * sin(Time(i)/slipping_period2);
+    Betta(i,1) = -slipping_amp1 * sin(Time(i)/slipping_period1);
+    Betta(i,2) = slipping_amp2 * cos(Time(i)/slipping_period2);
+    Betta(i,3) = -slipping_amp2 * sin(Time(i)/slipping_period1);
+    Betta(i,4) = slipping_amp1 * sin(Time(i)/slipping_period2);
 %     
     if rem(trajPhase, 2) ~= 0 % odd phase
         Anr(i) = 0;
         gamma(i,:) = [0, 0];
-        V(i) = 5.236/2 / 3;
+        V(i) = 1.7671/2;
+        tanval = 0;
+        tanf = tanval + tan((Betta(i,3) + Betta(i,4)) / 2);
+        gamma_mean = atan(tanf) - (Betta(i,1) + Betta(i,2)) / 2;
+        gamma(i,1) = gamma_mean - gamma_mean^2*lw/(lf+lr);
+        gamma(i,2) = gamma_mean + gamma_mean^2*lw/(lf+lr);
     else                        % even phase
-        V(i) = 5.236 / 3;
+        V(i) = 1.7671;
         if rem(trajPhase, 4) == 2
-%             Anr(i) = pi/6; % turn right on every 2nd phase
-            % gamma_mean + (betta1 + betta2)/2 = atan(tanval)
-            % tanval - tan((betta3 + betta4)/2) = tan(0.0799)
-            % tanval = tan(gamma_mean + (betta1 + betta2)/2)
-            tanval =  tan(0.0799) + tan((Betta(i,3) + Betta(i,4)) / 2);
-            gamma_mean = atan(tanval) - (Betta(i,1) + Betta(i,2)) / 2;
-%             gamma_mean = 0.0799 ;% will be equal to 0.5236 rad/s
+            tanval = 0.0267; % if overall tangent equals to this value,
+                             % the robot will move right (V=1.7671, Anr = 0.0589)
+            % Lets find the gamma value the robot needs to compensate for
+            % the wheels slip
+            tanf = tanval + tan((Betta(i,3) + Betta(i,4)) / 2);
+            gamma_mean = atan(tanf) - (Betta(i,1) + Betta(i,2)) / 2;
             gamma(i,1) = gamma_mean - gamma_mean^2*lw/(lf+lr);
             gamma(i,2) = gamma_mean + gamma_mean^2*lw/(lf+lr);
         else
-%             Anr(i) = -pi/6; % turn left on every 4th phase
-            %gamma_mean = -0.0799; % will be equal to -0.5236 rad/s
-            tanval =  tan(-0.0799) + tan((Betta(i,3) + Betta(i,4)) / 2);
-            gamma_mean = atan(tanval) - (Betta(i,1) + Betta(i,2)) / 2;
+            tanval = -0.0267;
+            tanf = tanval + tan((Betta(i,3) + Betta(i,4)) / 2);
+            gamma_mean = atan(tanf) - (Betta(i,1) + Betta(i,2)) / 2;
             gamma(i,1) = gamma_mean - gamma_mean^2*lw/(lf+lr);
             gamma(i,2) = gamma_mean + gamma_mean^2*lw/(lf+lr);
         end
@@ -216,11 +223,14 @@ end
 
 
 figure('Name', 'Robot trajectory');
-plot(Y,X, 'b', 'LineWidth', 1.0)
+% plot(gps_pos(:,2), gps_pos(:,1), 'Color', [0, 0.8, 0], 'LineWidth', 2.0)
+plot(Y,X, 'k', 'LineWidth', 2.0)
 axis equal
 grid on
 hold on
-% plot(gps_pos(:,2), gps_pos(:,1), 'r', 'LineWidth', 1.0)
+% plot(Y,X, 'k', 'LineWidth', 2.0)
+xlabel 'Y, ì'
+ylabel 'X, ì'
 
 % figure('Name', 'Robot rotation velocity');
 % plot(Time, gyro_anr, 'r', 'LineWidth', 1.0)
