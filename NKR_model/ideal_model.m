@@ -6,8 +6,11 @@ lw = 0.6;
 a = 0.05; % nkr wheel scaling for drawing purpose
 rw = 0.254/2;
 dt = 0.01;
-simTime = 100;
+simTime = 900;
 nSim = simTime / dt;
+
+lsx = -0.5;
+lsy = 0.1;
 
 
 %% Arrays init
@@ -29,7 +32,12 @@ gyro_anr = zeros(nSim, 1);
 odo_gamma = zeros(nSim, 1);
 Kappa = zeros(nSim, 1);
 
+
 odo_coords = zeros(nSim, 3);
+
+gps_pos_sci = zeros(nSim, 2);
+gps_delta = zeros(nSim, 2);
+gps_ddelta = zeros(nSim, 2);
 % store navigation solution
 
 V1 = zeros(nSim, 1);
@@ -58,37 +66,41 @@ gyro_noise = 3*pi/180; % rad/s
 odo_gamma_noise = 0.010; % rad
 
 %% Slipping parameters
-slipping_period1 = 30;
-slipping_period2 = 55;
-slipping_amp1 = 0.02;
-slipping_amp2 = -0.03;
+slipping_period1 = 70;
+slipping_period2 = 185;
+slipping_amp1 = 0.017;
+slipping_amp2 = -0.025;
 
 
 %% Main cycle
 for i = 1:nSim
     Time(i) = i * dt;
-    V(i) = 5.236; % constant velocity
+    V(i) = 5.236 / 3; % constant velocity
     %% Motion setup
     if Time(i) >= trajTimer
         trajPhase = trajPhase + 1;
         if rem(trajPhase, 2) == 0
-            trajTimer = trajTimer + 9; % 9 seconds for rotation arc
+            trajTimer = trajTimer + 9 ; % 9 seconds for rotation arc
+            
         else
-            trajTimer = trajTimer + 2*trajConst; % 3.82 seconds for straight line
+            trajTimer = trajTimer + 2*trajConst*2 * 3; % 3.82 seconds for straight line
+            
         end
     end
     gamma_mean = 0;
     
     % slipping angles
-    Betta(i,1) = slipping_amp1 * sin(Time(i)/slipping_period1);
-    Betta(i,2) = slipping_amp2 * cos(Time(i)/slipping_period2);
-    Betta(i,3) = slipping_amp2 * sin(Time(i)/slipping_period1);
-    Betta(i,4) = slipping_amp1 * sin(Time(i)/slipping_period2);
-    
+%     Betta(i,1) = -slipping_amp1 * sin(Time(i)/slipping_period1);
+%     Betta(i,2) = slipping_amp2 * cos(Time(i)/slipping_period2);
+%     Betta(i,3) = -slipping_amp2 * sin(Time(i)/slipping_period1);
+%     Betta(i,4) = slipping_amp1 * sin(Time(i)/slipping_period2);
+%     
     if rem(trajPhase, 2) ~= 0 % odd phase
         Anr(i) = 0;
         gamma(i,:) = [0, 0];
+        V(i) = 5.236/2 / 3;
     else                        % even phase
+        V(i) = 5.236 / 3;
         if rem(trajPhase, 4) == 2
 %             Anr(i) = pi/6; % turn right on every 2nd phase
             % gamma_mean + (betta1 + betta2)/2 = atan(tanval)
@@ -136,17 +148,17 @@ for i = 1:nSim
         Y(i) = 0;
         Heading(i) = 0;
     else
-        Heading(i) = Heading(i-1) + Anr(i)*dt;
+        Heading(i) = wrapToPi(Heading(i-1) + Anr(i)*dt);
         X(i) = X(i-1) + V(i)*cos(Heading(i) + B)*dt;
         Y(i) = Y(i-1) + V(i)*sin(Heading(i) + B)*dt;
     end  
 
     %% Measurements model
     % Odometer errors
-    odo_error1 = odometer_error * sin(Time(i)/25);
-    odo_error2 = odometer_error * sin(Time(i)/18);
-    odo_error3 = odometer_error * sin(Time(i)/11);
-    odo_error4 = odometer_error * sin(Time(i)/8);
+    odo_error1 = odometer_error * sin(Time(i)/85);
+    odo_error2 = odometer_error * sin(Time(i)/49);
+    odo_error3 = odometer_error * sin(Time(i)/30);
+    odo_error4 = odometer_error * sin(Time(i)/28);
     odo_w(i,:) = [w(i,1) * (1 + odo_error1) + normrnd(0, odometer_noise),...
         w(i,2) * (1 + odo_error2) + normrnd(0, odometer_noise),...
         w(i,3) * (1 + odo_error3) + normrnd(0, odometer_noise),...
@@ -155,20 +167,45 @@ for i = 1:nSim
 %     odo_gamma(i) = gamma_error - gamma_error^2*lw/(lf+lr);
 %     odo_gamma(i,2) = gamma_error + gamma_error^2*lw/(lf+lr);
     % GPS position errors
-    % TODO: receiver dislocation
-    if rem(i, 50) == 0 || i == 1
-        gps_pos_errorX = gps_pos_error * sin(Time(i)/25);
-        gps_pos_errorY = gps_pos_error * cos(Time(i)/35);
-        gps_pos(i,:) = [X(i) + gps_pos_errorX + normrnd(0, gps_pos_noise),...
-        Y(i) + gps_pos_errorY + normrnd(0, gps_pos_noise)];
+    mu = 0.1;
+    sigma = 1.4;
+    delta = 1;
+    mu2 = 0.04;
+    sigma2 = 2.1;
+    delta2 = 2.2;
+    if i > 1
+        gps_delta(i,1) = gps_delta(i-1,1) + gps_ddelta(i-1,1) * dt;
+        gps_delta(i,2) = gps_delta(i-1,2) + gps_ddelta(i-1,2) * dt;
+    end
+    gps_ddelta(i,1) = - mu * gps_ddelta(i,1) + sqrt(2 * sigma^2 * mu) * normrnd(0,1);
+    gps_ddelta(i,2) = - mu2 * gps_ddelta(i,2) + sqrt(2 * sigma2^2 * mu2) * normrnd(0,1);
+
+    if rem(i, 100) == 0 || i == 1
+        gps_pos_errorX = gps_pos_error * sin(Time(i)/250);
+        gps_pos_errorY = gps_pos_error * cos(Time(i)/350);
+        gps_pos(i,1) = X(i) + lsx*cos(Heading(i)) - lsy*sin(Heading(i)) ...
+            + gps_pos_errorX + normrnd(0, gps_pos_noise);
+        gps_pos(i,2) = Y(i) + lsx*sin(Heading(i)) + lsy*cos(Heading(i)) ...
+            + gps_pos_errorY + normrnd(0, gps_pos_noise);
         % GPS velocity errors
-        gps_vel_errorX = gps_vel_error * cos(Time(i)/15);
-        gps_vel_errorY = gps_vel_error * sin(Time(i)/8);
-        gps_vel(i,:) = [V(i)*cos(Heading(i)) + gps_vel_errorX + normrnd(0, gps_vel_noise),...
-        V(i)*sin(Heading(i)) + gps_vel_errorY + normrnd(0, gps_vel_noise)];
+        gps_vel_errorX = gps_vel_error * cos(Time(i)/150);
+        gps_vel_errorY = gps_vel_error * sin(Time(i)/80);
+        gps_vel(i,1) = V(i)*cos(Heading(i) + Kappa(i)) ...
+            + Anr(i) * (lsx*cos(Heading(i)) - lsy*sin(Heading(i))) ...
+            + gps_vel_errorX + normrnd(0, gps_vel_noise);
+        gps_vel(i,2) = V(i)*sin(Heading(i) + Kappa(i)) ...
+            + Anr(i) * (lsx*sin(Heading(i)) + lsy*cos(Heading(i))) ...
+            + gps_vel_errorY + normrnd(0, gps_vel_noise);
+        
+        
+        gps_pos_sci(i,1) = X(i) + delta + normrnd(0,4) + gps_delta(i,1);
+        gps_pos_sci(i,2) = Y(i) + delta2 + normrnd(0,4) + gps_delta(i,2);
+        
     else
         gps_pos(i,:) = gps_pos(i-1,:);
         gps_vel(i,:) = gps_vel(i-1,:);
+        gps_pos_sci(i,1) = gps_pos_sci(i-1,1);
+        gps_pos_sci(i,2) = gps_pos_sci(i-1,2);
     end
     % Gyroscope errors
     gyro_anr(i) = Anr(i) + gyro_bias + normrnd(0, gyro_noise);
@@ -183,50 +220,62 @@ plot(Y,X, 'b', 'LineWidth', 1.0)
 axis equal
 grid on
 hold on
-plot(gps_pos(:,2), gps_pos(:,1), 'r', 'LineWidth', 1.0)
+% plot(gps_pos(:,2), gps_pos(:,1), 'r', 'LineWidth', 1.0)
 
-figure('Name', 'Robot rotation velocity');
-plot(Time, gyro_anr, 'r', 'LineWidth', 1.0)
-grid on
-hold on
+% figure('Name', 'Robot rotation velocity');
+% plot(Time, gyro_anr, 'r', 'LineWidth', 1.0)
+% grid on
+% hold on
+% 
+% plot(Time, Anr, 'b', 'LineWidth', 1.0)
+% legend Anr Gyro
+% 
+% figure('Name', 'Robot velocity');
+% plot(Time, V, 'b', 'LineWidth', 1.0)
+% grid on
+% hold on
+% plot(Time, sqrt(gps_vel(:,1).^2 + gps_vel(:,2).^2), 'r', 'LineWidth', 1.0)
+% legend V gpsVel
+% 
+% figure('Name', 'Encoder readings');
+% plot(Time, odo_w(:,1), 'r', 'LineWidth', 1.0)
+% grid on
+% hold on
+% plot(Time, odo_w(:,2), '--r', 'LineWidth', 1.0)
+% plot(Time, w(:,2), '--b', 'LineWidth', 1.0)
+% plot(Time, w(:,1), 'b', 'LineWidth', 1.0)
+% % legend omega1 omega2 odo1
+% 
+% figure('Name', 'Encoder readings');
+% plot(Time, odo_w(:,3), 'r', 'LineWidth', 1.0)
+% grid on
+% hold on
+% plot(Time, odo_w(:,4), '--r', 'LineWidth', 1.0)
+% plot(Time, w(:,4), '--b', 'LineWidth', 1.0)
+% plot(Time, w(:,3), 'b', 'LineWidth', 1.0)
+% % legend omega1 omega2 odo1
+% 
+% figure('Name', 'Gamma readings');
+% 
+% plot(Time, odo_gamma, 'r', 'LineWidth', 1.0)
+% grid on
+% hold on
+% plot(Time, gamma(:,2), '--b', 'LineWidth', 1.0)
+% plot(Time, gamma(:,1), 'b', 'LineWidth', 1.0)
+% % plot(Time, odo_gamma(:,2), '--r', 'LineWidth', 1.0)
+% legend gamma1 gamma2 odo
+% 
+% 
+% figure('Name', 'GNSS Errors');
+% plot(Time, Y, 'b', 'LineWidth', 1.0);
+% hold on;
+% grid on
+% plot(Time, gps_pos(:,2), 'c', 'LineWidth', 1.0);
+% plot(Time, gps_pos_sci(:,2), 'r', 'LineWidth', 1.0);
 
-plot(Time, Anr, 'b', 'LineWidth', 1.0)
-legend Anr Gyro
 
-figure('Name', 'Robot velocity');
-plot(Time, V, 'b', 'LineWidth', 1.0)
-grid on
-hold on
-plot(Time, sqrt(gps_vel(:,1).^2 + gps_vel(:,2).^2), 'r', 'LineWidth', 1.0)
-legend V gpsVel
 
-figure('Name', 'Encoder readings');
-plot(Time, odo_w(:,1), 'r', 'LineWidth', 1.0)
-grid on
-hold on
-plot(Time, odo_w(:,2), '--r', 'LineWidth', 1.0)
-plot(Time, w(:,2), '--b', 'LineWidth', 1.0)
-plot(Time, w(:,1), 'b', 'LineWidth', 1.0)
-% legend omega1 omega2 odo1
-
-figure('Name', 'Encoder readings');
-plot(Time, odo_w(:,3), 'r', 'LineWidth', 1.0)
-grid on
-hold on
-plot(Time, odo_w(:,4), '--r', 'LineWidth', 1.0)
-plot(Time, w(:,4), '--b', 'LineWidth', 1.0)
-plot(Time, w(:,3), 'b', 'LineWidth', 1.0)
-% legend omega1 omega2 odo1
-
-figure('Name', 'Gamma readings');
-
-plot(Time, odo_gamma, 'r', 'LineWidth', 1.0)
-grid on
-hold on
-plot(Time, gamma(:,2), '--b', 'LineWidth', 1.0)
-plot(Time, gamma(:,1), 'b', 'LineWidth', 1.0)
-% plot(Time, odo_gamma(:,2), '--r', 'LineWidth', 1.0)
-legend gamma1 gamma2 odo
-
+%%
+gps_pos = gps_pos_sci;
 clearvars -except Kappa odo_gamma Time odo_w gps_vel gps_pos gyro_anr X Y Heading Betta V Anr w gamma
 

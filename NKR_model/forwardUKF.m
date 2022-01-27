@@ -112,6 +112,7 @@ function [state_prime] = forwardUKF(state, sensors)
         Xs(16,j) = Xs(16,j); % Betta4
         
         Xs(17,j) = atan( (lf * tan( 0.5*(Xs(15,j) + Xs(16,j)) ) + lr * tan( 0.5*(Xs(7,j) + Xs(8,j) + Xs(13,j) + Xs(14,j)) )) / (lf + lr) ); % Kappa
+%         Xs(18,j) = Xs(18,j);
 %         Xs(17,j) = atan2(Xs(4,j), Xs(3,j)) - Xs(5,j);
     end
     
@@ -211,6 +212,7 @@ function [state_prime] = forwardUKF(state, sensors)
         Z = [sensors.gyro];
         H = zeros(1,17);
         H(6) = 1;
+%         H(18) = 1;
         R = [sensors.egyro];
         I = eye(17);
         Y = Z - H * Xprime;
@@ -223,23 +225,33 @@ function [state_prime] = forwardUKF(state, sensors)
     [Xs, Ws] = unscented_transform(Xprime, Pprime);
     %% Unscented correction GPS
     if (sensors.gps_update == 1)
+        
+        head_corr = 0;
+        if sensors.gps_dx ~= 0
+            head_corr = atan2(sensors.gps_dy, sensors.gps_dx);
+        end
+        
         Z = [sensors.gps_x;
                 sensors.gps_y;
                 sensors.gps_dx;
-                sensors.gps_dy];
-        R = [sensors.egps_pos; sensors.egps_pos; sensors.egps_vel; sensors.egps_vel];
+                sensors.gps_dy;
+                head_corr];
+        R = [sensors.egps_pos; sensors.egps_pos; sensors.egps_vel; sensors.egps_vel; 8e-2;];
         n = 2 * dim + 1; % number of sigma-points
         % Transform all the sigma points Xs through the measurement function
-        Zs = zeros(4, n);
+        Zs = zeros(5, n);
         for er = 1:n
             Zs(1,er) = Xs(1,er) + lsx * cos(Xs(5,er)) - lsy * sin(Xs(5, er));
             Zs(2,er) = Xs(2,er) + lsx * sin(Xs(5,er)) + lsy * cos(Xs(5,er));
             Zs(3,er) = Xs(3,er) + Xs(6,er) * (lsx * cos(Xs(5,er)) - lsy * sin(Xs(5,er)));
             Zs(4,er) = Xs(4,er) + Xs(6,er) * (lsx * sin(Xs(5,er)) + lsy * cos(Xs(5,er)));
+            if sensors.gps_dx ~= 0
+                Zs(5,er) = Xs(5,er);
+            end
         end
         % Derive Zhat - predicted measurement
-        Zhat = zeros(4,1);
-        for i = 1:4
+        Zhat = zeros(5,1);
+        for i = 1:5
             Zhat(i) = 0;
             for j = 1:n
                 Zhat(i) = Zhat(i) + Zs(i,j)*Ws(1,j);
@@ -247,14 +259,14 @@ function [state_prime] = forwardUKF(state, sensors)
         end
 
         % Matrix S
-        S = zeros(4, 4);
+        S = zeros(5, 5);
         for j = 1:n
             S = S + Ws(2,j) * ((Zs(:,j) - Zhat) * (Zs(:,j) - Zhat)');
         end
         S = S + diag(R);
 
         % Matrix Sigma (x,z)
-        Sig = zeros(dim, 4);
+        Sig = zeros(dim, 5);
         for j = 1:n
             Sig = Sig + Ws(2,j) * ((Xs(:,j) - Xprime) * (Zs(:,j) - Zhat)');
         end

@@ -1,4 +1,4 @@
-function [X, Y, Heading, Velocity, Rate, Betta, vect, Omega, Gamma, Kappa] = test_ukf(time, gamma, Gyro, gps_pos, gps_vel, omega)
+function [X, Y, Heading, Velocity, Rate, Betta, vect, Omega, Gamma, Kappa, noise] = test_ukf(time, gamma, Gyro, gps_pos, gps_vel, omega)
     len = length(time);
     sensors.dt = 0.01;
 
@@ -11,6 +11,7 @@ function [X, Y, Heading, Velocity, Rate, Betta, vect, Omega, Gamma, Kappa] = tes
     Omega = zeros(len, 4);
     Gamma = zeros(len, 2);
     Kappa = zeros(len, 1);
+    noise = zeros(len, 1);
     
     vect = zeros(len, 16);
 %     velc = zeros(len, 1);
@@ -18,7 +19,7 @@ function [X, Y, Heading, Velocity, Rate, Betta, vect, Omega, Gamma, Kappa] = tes
     
     % init sensors struct
     sensors.odo_error = 1e-1;
-    sensors.egyro = 6e-2;
+    sensors.egyro = 2e-1;%6e-2;
     sensors.egps_pos = 8e0;
     sensors.egps_vel = 15e-1;
     sensors.eodow = 4e-2;
@@ -68,6 +69,7 @@ function [X, Y, Heading, Velocity, Rate, Betta, vect, Omega, Gamma, Kappa] = tes
         Omega(i,:) = kalman_state.X(9:12);
         Gamma(i,:) = kalman_state.X(7:8);
         Kappa(i) = kalman_state.X(17);
+%         noise(i) = kalman_state.X(18);
 %         vect(i,:) = kalman_state.X;
 %         velc(i)= sqrt((nav_params.velocity(1) - kalman_state.X(3))^2 + (nav_params.velocity(2) - kalman_state.X(4))^2);
         
