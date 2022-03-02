@@ -101,6 +101,7 @@ title('Kappa')
 grid on
 hold on
 plot(Time(1:limit), fKappa(1:limit, 1), 'b', 'LineWidth', 1.5)
+kerror = Kappa - fKappa;
 
 
 

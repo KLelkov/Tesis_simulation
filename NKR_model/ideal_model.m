@@ -174,18 +174,21 @@ for i = 1:nSim
 %     odo_gamma(i) = gamma_error - gamma_error^2*lw/(lf+lr);
 %     odo_gamma(i,2) = gamma_error + gamma_error^2*lw/(lf+lr);
     % GPS position errors
+    gps_angle = pi/6; % ?
     mu = 0.1;
-    sigma = 1.4;
-    delta = 1;
-    mu2 = 0.04;
-    sigma2 = 2.1;
-    delta2 = 2.2;
+    delta = 2.2;
+    if (Time(i) >= 600)
+        delta = -1.4;
+    end
+    sigma_w = 2.1;
+    sigma = 1.8;
+
     if i > 1
         gps_delta(i,1) = gps_delta(i-1,1) + gps_ddelta(i-1,1) * dt;
         gps_delta(i,2) = gps_delta(i-1,2) + gps_ddelta(i-1,2) * dt;
     end
-    gps_ddelta(i,1) = - mu * gps_ddelta(i,1) + sqrt(2 * sigma^2 * mu) * normrnd(0,1);
-    gps_ddelta(i,2) = - mu2 * gps_ddelta(i,2) + sqrt(2 * sigma2^2 * mu2) * normrnd(0,1);
+    gps_ddelta(i,1) = - mu * gps_ddelta(i,1) + sqrt(2 * (sigma*cos(gps_angle))^2 * mu) * normrnd(0,1);
+    gps_ddelta(i,2) = - mu * gps_ddelta(i,2) + sqrt(2 * (sigma*sin(gps_angle))^2 * mu) * normrnd(0,1);
 
     if rem(i, 100) == 0 || i == 1
         gps_pos_errorX = gps_pos_error * sin(Time(i)/250);
@@ -204,10 +207,12 @@ for i = 1:nSim
             + Anr(i) * (lsx*sin(Heading(i)) + lsy*cos(Heading(i))) ...
             + gps_vel_errorY + normrnd(0, gps_vel_noise);
         
-        
-        gps_pos_sci(i,1) = X(i) + delta + normrnd(0,4) + gps_delta(i,1);
-        gps_pos_sci(i,2) = Y(i) + delta2 + normrnd(0,4) + gps_delta(i,2);
-        
+        % Scientific GNSS errors
+        gps_pos_sci(i,1) = X(i) + delta*cos(gps_angle) + normrnd(0,sigma_w) + gps_delta(i,1);
+        gps_pos_sci(i,2) = Y(i) + delta*sin(gps_angle) + normrnd(0,sigma_w) + gps_delta(i,2);
+        % Antenna displacement
+        gps_pos_sci(i,1) = gps_pos_sci(i,1) + lsx*cos(Heading(i)) - lsy*sin(Heading(i));
+        gps_pos_sci(i,2) = gps_pos_sci(i,2) + lsx*sin(Heading(i)) + lsy*cos(Heading(i));
     else
         gps_pos(i,:) = gps_pos(i-1,:);
         gps_vel(i,:) = gps_vel(i-1,:);
@@ -223,20 +228,29 @@ end
 
 
 figure('Name', 'Robot trajectory');
-% plot(gps_pos(:,2), gps_pos(:,1), 'Color', [0, 0.8, 0], 'LineWidth', 2.0)
-plot(Y,X, 'k', 'LineWidth', 2.0)
+plot(gps_pos_sci(:,2), gps_pos_sci(:,1), 'Color', [0, 0.8, 0], 'LineWidth', 2.0)
+% plot(Y,X, 'k', 'LineWidth', 2.0)
 axis equal
 grid on
 hold on
-% plot(Y,X, 'k', 'LineWidth', 2.0)
+plot(Y,X, 'k', 'LineWidth', 2.0)
 xlabel 'Y, м'
 ylabel 'X, м'
+legend 'Модель измерений СНС' 'Заданная траектория'
+
+figure('Name', 'GPS location measurement compare');
+plot(Time, gps_pos_sci(:,1) - X(:), 'b', 'LineWidth', 1.0)
+grid on
+hold on
+plot(Time, Anr - mean(Anr), 'r', 'LineWidth', 1.0)
+legend 'Модель ошибок' 'Реальные ошибки'
+xlabel 'Время, с'
+ylabel 'Ошибка измерения, м'
 
 % figure('Name', 'Robot rotation velocity');
 % plot(Time, gyro_anr, 'r', 'LineWidth', 1.0)
 % grid on
 % hold on
-% 
 % plot(Time, Anr, 'b', 'LineWidth', 1.0)
 % legend Anr Gyro
 % 
