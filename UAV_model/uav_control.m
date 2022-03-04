@@ -43,6 +43,9 @@ function [controls] = uav_control(state, controls, target)
     
     % Transition from body frame to geo frame
     dVg = Rgb' * [ddxb; ddyb; ddzb];
+    dyaw = (wzb * cos(roll) + wyb * sin(roll)) / cos(pitch);
+    dpitch = wyb * cos(roll) - wzb * sin(roll);
+    droll = wxb + dyaw * sin(pitch);
     
     % Propulsion moments on motors
     T = zeros(1,6);
@@ -53,7 +56,7 @@ function [controls] = uav_control(state, controls, target)
     
     % Vertical velocity
     vze = target.dvz - dzg;
-    vz_control = -2.85 * vze + 1.33 * dVg(3);
+    vz_control = 9.3 * vze - 4.25 * dVg(3);
     
     % Forward velocity
     vxe = target.dvx - dxg;
@@ -61,31 +64,39 @@ function [controls] = uav_control(state, controls, target)
     
     % Lateral velocity
     vye = target.dvy - dyg;
-    vy_control = 0.6 * vye + 0.2 * dVg(2);
+    vy_control = 0.6 * vye - 0.2 * dVg(2);
     
     % Pitch
-    pe = vx_control - pitch;
-    pitch_control = 0.8 * pe + 0.1 * wyb;
+    pe = target.dpitch - dpitch;
+    pitch_control = 0.0003 * pe - 0.0001 * dwyb
     
     % Roll
     re = vy_control - roll;
     roll_control = 0.8 * re + 0.1 * wxb;
     
     % Yaw
-    ye = target.yaw - yaw;
-    yaw_control = 0.8 * ye + 0.1 * wzb;
+    ye = target.dyaw - dyaw;
+    yaw_control = 0.03 * ye + 0.002 * dwzb;
+    yaw_control  = 0.01;
     
     % Convert control moments into separate motors lift force change
     Mx = 0;%roll_control;
-    My = 0;%pitch_control;
-    Mz = 0;%yaw_control;
-    R = vz_control;
-    T1 = R/2;
-    T2 = -(Mx*kr*lxp - My*kr*lyp1 - My*kr*lyp2 + Mz*lxp*lyp1 + R*kr*lxp*lyp1 + R*kr*lxp*lyp2)/(2*kr*lxp*(lyp1 + lyp2));
-    T3 = -(Mx*kr*lxp + My*kr*lyp1 + My*kr*lyp2 - Mz*lxp*lyp2 - R*kr*lxp*lyp1 - R*kr*lxp*lyp2)/(2*kr*lxp*(lyp1 + lyp2));
-    T4 = (Mx*kr*lxp - My*kr*lyp1 - My*kr*lyp2 - Mz*lxp*lyp2 + R*kr*lxp*lyp1 + R*kr*lxp*lyp2)/(2*kr*lxp*(lyp1 + lyp2));
-    T5 = (Mx*kr*lxp + My*kr*lyp1 + My*kr*lyp2 + Mz*lxp*lyp1 - R*kr*lxp*lyp1 - R*kr*lxp*lyp2)/(2*kr*lxp*(lyp1 + lyp2));
-    T6 = R/2;
+    My = pitch_control;
+    Mz = 0;
+    R = 0;%-vz_control;
+%     T1 = R/2;
+%     T2 = -(Mx*kr*lxp - My*kr*lyp1 - My*kr*lyp2 + Mz*lxp*lyp1 + R*kr*lxp*lyp1 + R*kr*lxp*lyp2)/(2*kr*lxp*(lyp1 + lyp2));
+%     T3 = -(Mx*kr*lxp + My*kr*lyp1 + My*kr*lyp2 - Mz*lxp*lyp2 - R*kr*lxp*lyp1 - R*kr*lxp*lyp2)/(2*kr*lxp*(lyp1 + lyp2));
+%     T4 = (Mx*kr*lxp - My*kr*lyp1 - My*kr*lyp2 - Mz*lxp*lyp2 + R*kr*lxp*lyp1 + R*kr*lxp*lyp2)/(2*kr*lxp*(lyp1 + lyp2));
+%     T5 = (Mx*kr*lxp + My*kr*lyp1 + My*kr*lyp2 + Mz*lxp*lyp1 - R*kr*lxp*lyp1 - R*kr*lxp*lyp2)/(2*kr*lxp*(lyp1 + lyp2));
+%     T6 = R/2;
+    T1 = R/6;
+    T2 = (3*My*kr*lyp1 - 3*Mx*kr*lxp + 3*My*kr*lyp2 - 3*Mz*lxp*lyp1 + R*kr*lxp*lyp1 + R*kr*lxp*lyp2)/(6*kr*lxp*(lyp1 + lyp2));
+    T3 = -(3*Mx*kr*lxp + 3*My*kr*lyp1 + 3*My*kr*lyp2 - 3*Mz*lxp*lyp2 - R*kr*lxp*lyp1 - R*kr*lxp*lyp2)/(6*kr*lxp*(lyp1 + lyp2));
+    T4 = (3*Mx*kr*lxp - 3*My*kr*lyp1 - 3*My*kr*lyp2 - 3*Mz*lxp*lyp2 + R*kr*lxp*lyp1 + R*kr*lxp*lyp2)/(6*kr*lxp*(lyp1 + lyp2));
+    T5 = (3*Mx*kr*lxp + 3*My*kr*lyp1 + 3*My*kr*lyp2 + 3*Mz*lxp*lyp1 + R*kr*lxp*lyp1 + R*kr*lxp*lyp2)/(6*kr*lxp*(lyp1 + lyp2));
+    T6 = R/6;
+ 
     
     dw1 = sign(T1)*sqrt(abs(T1) / 2 / ro / pi / r^2);
     dw2 = sign(T2)*sqrt(abs(T2) / 2 / ro / pi / r^2);
@@ -94,13 +105,19 @@ function [controls] = uav_control(state, controls, target)
     dw5 = sign(T5)*sqrt(abs(T5) / 2 / ro / pi / r^2);
     dw6 = sign(T6)*sqrt(abs(T6) / 2 / ro / pi / r^2);
     
-    controls(1) = controls(1) + dw1;
-    controls(2) = controls(2) + dw2;
-    controls(3) = controls(3) + dw3;
-    controls(4) = controls(4) + dw4;
-    controls(5) = controls(5) + dw5;
-    controls(6) = controls(6) + dw6;
+    w1 = controls(1) + dw1;
+    w2 = controls(2) + dw2;
+    w3 = controls(3) + dw3;
+    w4 = controls(4) + dw4;
+    w5 = controls(5) + dw5;
+    w6 = controls(6) + dw6;
     
+    controls(1) = bound(w1, 0, 1500);
+    controls(2) = bound(w2, 0, 1500);
+    controls(3) = bound(w3, 0, 1500);
+    controls(4) = bound(w4, 0, 1500);
+    controls(5) = bound(w5, 0, 1500);
+    controls(6) = bound(w6, 0, 1500);
 
     
 end
