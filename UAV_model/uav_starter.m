@@ -12,10 +12,10 @@ state.wxb = 0;
 state.wyb = 0;
 state.wzb = 0;
 state.yaw = 0;
-state.pitch = 0;
+state.pitch = 0.2;
 state.roll = 0;
 state.dyaw = 0;
-state.dpitch = 0;
+state.dpitch = 0.6;
 state.droll = 0;
 state.dwxb = 0;
 state.dwyb = 0;
@@ -24,7 +24,7 @@ state.dxg = 0;
 state.dyg = 0;
 state.dzg = 0;
 
-simTime = 6;
+simTime = 16;
 dt = 0.01;
 nSim = simTime / dt;
 Position = zeros(nSim, 3);
@@ -36,15 +36,17 @@ Controls = zeros(nSim, 6);
 Time = zeros(nSim, 1);
 
 w = 1000 - 100;
-controls = [w w w w w w];
+controls = [w w w-3 w-3 w w];
 target.yaw = 0;
 target.dvx = 0;
 target.dvy = 0;
 target.dvz = 0;
-target.dpitch = 1.4;
+target.dpitch = 0;
 target.dyaw = 0.0;
+target.pitch = 0.0;
+control_params.last_dp = 0;
 for i = 1:nSim
-    controls = uav_control(state, controls, target);
+    [controls, control_params] = uav_control(state, controls, target, control_params);
     state = uav_sim_step(state, controls);
     
     Time(i) = i * dt;
@@ -53,7 +55,7 @@ for i = 1:nSim
     Velocity(i,:) = [state.dxg, state.dyg, state.dzg];
     Rate(i,:) = [state.dyaw, state.dpitch, state.droll];
     Controls(i,:) = controls;
-%     dRate(i,:) = [state.dwxb, state.dwyb, state.dwzb];
+    dRate(i,:) = [state.dwxb, state.dwyb, state.dwzb];
 end
 
 
@@ -77,6 +79,11 @@ figure
 plot(Time, Rate);
 grid on
 title 'Rate'
+
+figure
+plot(Time, dRate);
+grid on
+title 'dRate'
 
 figure
 plot(Time, Controls);

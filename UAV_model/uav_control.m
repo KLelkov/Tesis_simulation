@@ -1,4 +1,4 @@
-function [controls] = uav_control(state, controls, target)
+function [controls, control_params] = uav_control(state, controls, target, control_params)
     W = controls;
     
     g = 9.81;
@@ -67,12 +67,35 @@ function [controls] = uav_control(state, controls, target)
     vy_control = 0.6 * vye - 0.2 * dVg(2);
     
     % Pitch
+    pe1 = target.pitch - pitch;
+    dp_control = 1.3 * pe1 + 0.04 * dpitch;
     pe = target.dpitch - dpitch;
-    pitch_control = 0.0003 * pe - 0.0001 * dwyb
+    pe = dp_control - dpitch;
+    ddp = ((1.3 * (target.pitch - pitch) - 1.1 * dpitch) - control_params.last_dp) * 0.01;
+    last_dp = (1.3 * (target.pitch - pitch) - 1.1 * dpitch);
+%     pitch_control = 0.0003 * (1.3 * (target.pitch - pitch) - 1.1 * dpitch) - 0.0001 * dwyb;
+    ddp = ((0.3 - dpitch) - control_params.last_dp)/0.01;
+%     ddp = bound(ddp, -20, 20);
+    control_params.last_dp = (0.0 - dpitch);
+    err = (0.3 - dpitch) - 0.5*dwyb;
+    pitch_control = 0.0006 * err ;
+%     if abs(err) > 0.02
+%         pitch_control = 0.0006 * (0.3 - dpitch) + 0.0002 * ddp;
+%     else
+%         pitch_control = 0.0006 * (0.3 - dpitch);
+%     end
     
+    if abs(pitch_control) < 0.00001
+        pitch_control = 0.0;
+    end
+%     pitch_control = bound(pitch_control, -5e-5, 5e-5);
+%     dpitch
+%     dwyb
+    ddp
+   
     % Roll
     re = vy_control - roll;
-    roll_control = 0.8 * re + 0.1 * wxb;
+    roll_control = 1.3 * re + 0.1 * wxb;
     
     % Yaw
     ye = target.dyaw - dyaw;
@@ -84,12 +107,6 @@ function [controls] = uav_control(state, controls, target)
     My = pitch_control;
     Mz = 0;
     R = 0;%-vz_control;
-%     T1 = R/2;
-%     T2 = -(Mx*kr*lxp - My*kr*lyp1 - My*kr*lyp2 + Mz*lxp*lyp1 + R*kr*lxp*lyp1 + R*kr*lxp*lyp2)/(2*kr*lxp*(lyp1 + lyp2));
-%     T3 = -(Mx*kr*lxp + My*kr*lyp1 + My*kr*lyp2 - Mz*lxp*lyp2 - R*kr*lxp*lyp1 - R*kr*lxp*lyp2)/(2*kr*lxp*(lyp1 + lyp2));
-%     T4 = (Mx*kr*lxp - My*kr*lyp1 - My*kr*lyp2 - Mz*lxp*lyp2 + R*kr*lxp*lyp1 + R*kr*lxp*lyp2)/(2*kr*lxp*(lyp1 + lyp2));
-%     T5 = (Mx*kr*lxp + My*kr*lyp1 + My*kr*lyp2 + Mz*lxp*lyp1 - R*kr*lxp*lyp1 - R*kr*lxp*lyp2)/(2*kr*lxp*(lyp1 + lyp2));
-%     T6 = R/2;
     T1 = R/6;
     T2 = (3*My*kr*lyp1 - 3*Mx*kr*lxp + 3*My*kr*lyp2 - 3*Mz*lxp*lyp1 + R*kr*lxp*lyp1 + R*kr*lxp*lyp2)/(6*kr*lxp*(lyp1 + lyp2));
     T3 = -(3*Mx*kr*lxp + 3*My*kr*lyp1 + 3*My*kr*lyp2 - 3*Mz*lxp*lyp2 - R*kr*lxp*lyp1 - R*kr*lxp*lyp2)/(6*kr*lxp*(lyp1 + lyp2));

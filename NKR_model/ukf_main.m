@@ -103,6 +103,15 @@ hold on
 plot(Time(1:limit), fKappa(1:limit, 1), 'b', 'LineWidth', 1.5)
 kerror = Kappa - fKappa;
 
+figure;
+plot(Time(1:limit), kerror * 180.0 / pi, 'b', 'LineWidth', 1.5)
+grid on
+xlabel 'Время, с'
+ylabel 'Ошибка оценки угла сноса, град'
+
+
+
+
 
 
 error = sqrt( (cfY - Y).^2 + (cfX - X).^2 );
