@@ -37,13 +37,14 @@ Time = zeros(nSim, 1);
 
 w = 1000 - 100;
 controls = [w w w w w w];
-target.yaw = 0;
-target.dvx = 0.6;
-target.dvy = 0;
+target.yaw = 0.7;
+target.dvx = 0;
+target.dvy = 0.0;
 target.dvz = 0;
 target.dpitch = 0.0;
 target.dyaw = 0.0;
 target.pitch = 0.0;
+% target.pitch = 0.0;
 control_params.last_dp = 0;
 for i = 1:nSim
     [controls, control_params] = uav_control(state, controls, target, control_params);

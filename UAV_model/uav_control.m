@@ -47,6 +47,11 @@ function [controls, control_params] = uav_control(state, controls, target, contr
     dpitch = wyb * cos(roll) - wzb * sin(roll);
     droll = wxb + dyaw * sin(pitch);
     
+    % Normal frame. X is the forward motion of UAV, Y is the lateral motion
+    dVxn = dVg(1) * cos(yaw) + dVg(2) * sin(yaw);
+    dVyn = -dVg(1) * sin(yaw) + dVg(2) * cos(yaw);
+
+    
     % Propulsion moments on motors
     T = zeros(1,6);
     for j = 1:6
@@ -60,11 +65,11 @@ function [controls, control_params] = uav_control(state, controls, target, contr
     
     % Forward velocity
     vxe = target.dvx - dxg;
-    vx_control = -0.76 * vxe + 0.27 * dVg(1);
+    vx_control = -0.76 * vxe + 0.27 * dVxn;
     
     % Lateral velocity
     vye = target.dvy - dyg;
-    vy_control = 0.6 * vye - 0.2 * dVg(2);
+    vy_control = 0.76 * vye - 0.27 * dVyn;
     
     % Pitch
     pe1 = vx_control - pitch;
@@ -72,10 +77,10 @@ function [controls, control_params] = uav_control(state, controls, target, contr
     dp_control = 1.7 * pe1 - 0.14 * dpitch;
 %     pe = target.dpitch - dpitch;
     pe = dp_control - dpitch;
-    ddp = ((1.3 * (target.pitch - pitch) - 1.1 * dpitch) - control_params.last_dp) * 0.01;
-    last_dp = (1.3 * (target.pitch - pitch) - 1.1 * dpitch);
+%     ddp = ((1.3 * (target.pitch - pitch) - 1.1 * dpitch) - control_params.last_dp) * 0.01;
+%     last_dp = (1.3 * (target.pitch - pitch) - 1.1 * dpitch);
 %     pitch_control = 0.0003 * (1.3 * (target.pitch - pitch) - 1.1 * dpitch) - 0.0001 * dwyb;
-    ddp = ((0.3 - dpitch) - control_params.last_dp)/0.01;
+%     ddp = ((0.3 - dpitch) - control_params.last_dp)/0.01;
 %     ddp = bound(ddp, -20, 20);
 %     control_params.last_dp = (0.0 - dpitch);
 %     err = (0.3 - dpitch) - 0.5*dwyb;
@@ -95,18 +100,27 @@ function [controls, control_params] = uav_control(state, controls, target, contr
 %     ddp
    
     % Roll
-    re = vy_control - roll;
-    roll_control = 1.3 * re + 0.1 * wxb;
+    re1 = vy_control - roll;
+    dr_control = 1.7 * re1 - 0.14 * droll;
+    re = dr_control - droll;
+    roll_control = 0.42 * re - 0.02 * dwxb;
     
     % Yaw
-    ye = target.dyaw - dyaw;
-    yaw_control = 0.03 * ye + 0.002 * dwzb;
-    yaw_control  = 0.01;
+    ye1 = target.yaw - yaw;
+    ye1 = pi2pi(ye1);
+    dy_control = 2.18 * ye1 - 0.18 * dyaw;
+    ye = dy_control - dyaw;
+    yaw_control = 0.53 * ye - 0.03 * dwzb;
+    
+%     ye = target.dyaw - dyaw;
+    
+%     yaw_control = 0.42 * ye + 0.02 * dwzb;
+%     yaw_control  = 0.01;
     
     % Convert control moments into separate motors lift force change
-    Mx = 0;%roll_control;
+    Mx = roll_control;
     My = pitch_control;
-    Mz = 0;
+    Mz = yaw_control;
     R = -vz_control;
 %     T1 = R/6;
 %     T2 = (3*My*kr*lyp1 - 3*Mx*kr*lxp + 3*My*kr*lyp2 - 3*Mz*lxp*lyp1 + R*kr*lxp*lyp1 + R*kr*lxp*lyp2)/(6*kr*lxp*(lyp1 + lyp2));
