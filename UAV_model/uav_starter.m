@@ -30,6 +30,7 @@ nSim = simTime / dt;
 Position = zeros(nSim, 3);
 Orientation = zeros(nSim, 3);
 Velocity = zeros(nSim, 3);
+Acceleration = zeros(nSim, 3);
 Rate = zeros(nSim, 3);
 dRate = zeros(nSim, 3);
 Controls = zeros(nSim, 6);
@@ -57,36 +58,118 @@ for i = 1:nSim
     Rate(i,:) = [state.dyaw, state.dpitch, state.droll];
     Controls(i,:) = controls;
     dRate(i,:) = [state.dwxb, state.dwyb, state.dwzb];
+    Acceleration(i,:) = [state.ddxg, state.ddyg, state.ddzg];
 end
 
 
 close all
-figure
-plot(Time, Position);
+figure('Name', 'Motion parameters', 'Position', [100 150 1750 650])
+subplot(3,3,[1 4 7])
+plot3(Position(:,2), Position(:,1), Position(:,3), 'Linewidth', 1)
+grid on
+hold on
+plot3(Position(end,2), Position(end,1), Position(end,3), '.r', 'MarkerSize', 15)
+% axis equal
+xlabel 'Yg (east)'
+ylabel 'Xg (north)'
+zlabel 'Zg (down)'
+subplot(3,3,2)
+plot(Time, Position, 'LineWidth', 2);
 grid on
 title 'Position'
-
-figure
-plot(Time, Velocity);
+xlabel 'Time, s'
+ylabel 'Coords, m'
+legend xg yg zg
+subplot(3,3,5)
+plot(Time, Velocity, 'LineWidth', 2);
 grid on
 title 'Velocity'
+xlabel 'Time, s'
+ylabel 'Velocity, m/s'
+legend Vxg Vyg Vzg
+subplot(3,3,8)
+plot(Time, Acceleration, 'LineWidth', 2);
+grid on
+title 'Acceleration'
+xlabel 'Time, s'
+ylabel 'Acceleration, m/s2'
+legend dVxg dVyg dVzg
 
-figure
-plot(Time, Orientation);
+
+subplot(3,3,3)
+plot(Time, Orientation .* 180.0 / pi, 'LineWidth', 2);
 grid on
 title 'Orientation'
+xlabel 'Time, s'
+ylabel 'Angle, deg'
+legend Yaw Pitch Roll
 
-figure
-plot(Time, Rate);
+subplot(3,3,6)
+plot(Time, Rate .* 180.0 / pi, 'LineWidth', 2);
 grid on
 title 'Rate'
+xlabel 'Time, s'
+ylabel 'Rate, deg/s'
+legend dYaw dPitch dRoll
 
-figure
-plot(Time, dRate);
+subplot(3,3,9)
+plot(Time, dRate .* 180.0 / pi, 'LineWidth', 2);
 grid on
-title 'dRate'
+title 'Angular acceleration'
+xlabel 'Time, s'
+ylabel 'dRate, deg/s2'
+legend dwxb dwyb dwzb
 
-figure
-plot(Time, Controls);
+figure('Name', 'Control parameters', 'Position', [100 150 1050 650])
+subplot(3,2,1)
+plot(Time, Controls, 'Color', [0.7 0.7 0.7], 'LineWidth', 2);
 grid on
-title 'Controls'
+hold on
+plot(Time, Controls(:,6), 'r', 'LineWidth', 2);
+xlabel 'Time, s'
+ylabel 'Rate, rad/s'
+title 'W6'
+subplot(3,2,2)
+plot(Time, Controls, 'Color', [0.7 0.7 0.7], 'LineWidth', 2);
+grid on
+hold on
+plot(Time, Controls(:,1), 'b', 'LineWidth', 2);
+xlabel 'Time, s'
+ylabel 'Rate, rad/s'
+title 'W1'
+
+subplot(3,2,3)
+plot(Time, Controls, 'Color', [0.7 0.7 0.7], 'LineWidth', 2);
+grid on
+hold on
+plot(Time, Controls(:,5), 'b', 'LineWidth', 2);
+xlabel 'Time, s'
+ylabel 'Rate, rad/s'
+title 'W5'
+
+subplot(3,2,4)
+plot(Time, Controls, 'Color', [0.7 0.7 0.7], 'LineWidth', 2);
+grid on
+hold on
+plot(Time, Controls(:,2), 'r', 'LineWidth', 2);
+xlabel 'Time, s'
+ylabel 'Rate, rad/s'
+title 'W2'
+
+subplot(3,2,5)
+plot(Time, Controls, 'Color', [0.7 0.7 0.7], 'LineWidth', 2);
+grid on
+hold on
+plot(Time, Controls(:,4), 'b', 'LineWidth', 2);
+xlabel 'Time, s'
+ylabel 'Rate, rad/s'
+title 'W4'
+
+subplot(3,2,6)
+plot(Time, Controls, 'Color', [0.7 0.7 0.7], 'LineWidth', 2);
+grid on
+hold on
+plot(Time, Controls(:,3), 'r', 'LineWidth', 2);
+xlabel 'Time, s'
+ylabel 'Rate, rad/s'
+title 'W3'

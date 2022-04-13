@@ -129,6 +129,7 @@ function state_prime = uav_sim_step(state, controls)
     
     % Transition from body frame to geo frame
     Vg = Rgb' * [dxb; dyb; dzb];
+    dVg = Rgb' * [ddxb; ddyb; ddzb];
     
     
     state_prime.xg = xg;
@@ -152,6 +153,9 @@ function state_prime = uav_sim_step(state, controls)
     state_prime.dxg = Vg(1);
     state_prime.dyg = Vg(2);
     state_prime.dzg = Vg(3);
+    state_prime.ddxg = dVg(1);
+    state_prime.ddyg = dVg(2);
+    state_prime.ddzg = dVg(3);
     
     state_prime.dyaw = dyaw;
     state_prime.dpitch = dpitch;
