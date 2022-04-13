@@ -69,7 +69,7 @@ function state_prime = uav_sim_step(state, controls)
     T = zeros(1,6);
     for j = 1:6
         vzi = k * W(j)^2;
-        T(j) = 2 * ro * pi * r^2 * vzi * (vzi - dzb);
+        T(j) = 2 * ro * pi * r^2 * vzi * (vzi);% - dzb);
     end
     
     % Rotation matrix
@@ -93,9 +93,9 @@ function state_prime = uav_sim_step(state, controls)
     % Moments
     Mbp = [lyp1*(T(6)+T(4)-T(3)-T(1)) + lyp2*(T(5)-T(2));
         lxp*(T(1) - T(3) - T(4) + T(6));
-        kr*(T(1)-T(2)+T(3)-T(4)+T(5)-T(6))];
+        kr*(T(1)-T(2)-T(3)+T(4)+T(5)-T(6))];
     Mbgp = [Jr*wyb*(W(1) - W(2) + W(3) - W(4) + W(5) - W(6));
-        -Jr*wxb*(W(1) - W(2) + W(3) - W(4) + W(5) - W(6));
+        -Jr*wxb*(W(1) - W(2) - W(3) + W(4) + W(5) - W(6));
         0];
     Mba = [0.5*mx*ro*Vb^2*Sxy*ly;
         0.5*my*ro*Vb^2*Sxy*lx;

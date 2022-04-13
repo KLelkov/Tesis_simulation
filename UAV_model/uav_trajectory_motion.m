@@ -67,7 +67,7 @@ uav_vel = 1.0 / sqrt(3); % m/s
 uav_rate = 5.0; % rad/s
 uav_acc_lim = 1.4; % m/s
 uav_rcc_lim = 4; % rad/s
-dt = 0.05; % sec
+dt = 0.1; % sec
 X = 0;
 Y = 0;
 Z = 0;
@@ -81,7 +81,8 @@ Time = 0;
 i = 1;
 pnt = 1;
 fin = false;
-while ~fin
+% while ~fin
+for iw = 1:400
     i = i + 1;
     dx = target_points(pnt,1) - X(end);
     dy = target_points(pnt,2) - Y(end);
@@ -90,19 +91,17 @@ while ~fin
     dy1 = target_points(pnt,5) - Y(end);
 %     target_heading = atan2(dy1, dx1);
 %     dh = target_heading - Heading(end);
-    dh =  atan2(dy, dx) + pi/2 - Heading(end);
+    dh =  atan2(dy, dx) - Heading(end) + pi/2;
     if dx == 0 && dy == 0
         dh =  0 - Heading(end);
     end
     
-    if abs(dh) > pi
-        dh = dh - 2*pi*sign(dh);
-    end
+    
     
     dx = bound(2*dx, -uav_vel, uav_vel);
     dy = bound(2*dy, -uav_vel, uav_vel);
     dz = bound(2*dz, -uav_vel, uav_vel);
-    dh = bound(2*dh, -uav_rate, uav_rate);
+    dh = bound(2*dh, -uav_rate, uav_rate) * sign(dx);
 %     dh = 1;
     if sqrt(dx^2 + dy^2 + dz^2) < 0.2
         pnt = pnt + 1;
@@ -111,15 +110,19 @@ while ~fin
         end
     end
     
+    if abs(dh) > pi
+        dh = dh - 2*pi*sign(dh);
+    end
     
-    Acceleration(i,1) = (dx - Velocity(end,1)) * 1.2 + Acceleration(i-1,1)*0.4;
-    Acceleration(i,2) = (dy - Velocity(end,2)) * 1.2 + Acceleration(i-1,2)*0.4;
-    Acceleration(i,3) = (dz - Velocity(end,3)) * 1.2 + Acceleration(i-1,3)*0.4;
+    
+    Acceleration(i,1) = (dx - Velocity(end,1)) * 1.2 + Acceleration(i-1,1)*0.2;
+    Acceleration(i,2) = (dy - Velocity(end,2)) * 1.2 + Acceleration(i-1,2)*0.2;
+    Acceleration(i,3) = (dz - Velocity(end,3)) * 1.2 + Acceleration(i-1,3)*0.2;
     Acceleration(i,1) = bound(Acceleration(i,1), -uav_acc_lim, uav_acc_lim);
     Acceleration(i,2) = bound(Acceleration(i,2), -uav_acc_lim, uav_acc_lim);
     Acceleration(i,3) = bound(Acceleration(i,3), -uav_acc_lim, uav_acc_lim);
  
-    ddHeading(i) = (dh - dHeading(end)) * 1.4 + ddHeading(i-1) * 0.6;
+    ddHeading(i) = (dh - dHeading(end)) * 0.9 + ddHeading(i-1) * 0.2;
     ddHeading(i) = bound(ddHeading(i), -uav_rcc_lim, uav_rcc_lim);
      
     Time(i) = Time(i-1) + dt;
@@ -147,12 +150,17 @@ while ~fin
 %     Acceleration(i,2) = (Velocity(i,2) - Velocity(i-1,2)) / dt;
 %     Acceleration(i,3) = (Velocity(i,3) - Velocity(i-1,3)) / dt;
 %     
-%     Acceleration_b(i,1) = Acceleration(i,1) * cos(Heading(i)) + Acceleration(i,2) * sin(Heading(i));
-%     Acceleration_b(i,2) = -Acceleration(i,1) * sin(Heading(i)) + Acceleration(i,2) * cos(Heading(i));
-% %     Acceleration_b(i,3) = (Velocity(i,3) - Velocity(i-1,3)) / dt;
+    Acceleration_b(i,1) = Acceleration(i,1) * cos(Heading(i)) + Acceleration(i,2) * sin(Heading(i));
+    Acceleration_b(i,2) = -Acceleration(i,1) * sin(Heading(i)) + Acceleration(i,2) * cos(Heading(i));
+    Acceleration_b(i,3) = (Velocity(i,3) - Velocity(i-1,3)) / dt;
     
     if abs(Heading(i)) > pi
         Heading(i) = Heading(i) - 2*pi*sign(Heading(i));
+    end
+    
+    Heading(i) = atan2(dy, dx) + pi/2;
+    if dx == 0 && dy == 0
+        Heading(i) = 0;
     end
 end
 
@@ -179,6 +187,8 @@ for i = 1:len
 %     drawnow;
 %     pause(0.1);
 end
+hold on
+plot3(Y, X, Z, 'k', 'LineWidth', 2);
 
 figure;plot(Heading)
 figure;plot(dHeading)

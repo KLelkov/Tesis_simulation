@@ -56,42 +56,43 @@ function [controls, control_params] = uav_control(state, controls, target, contr
     
     % Vertical velocity
     vze = target.dvz - dzg;
-    vz_control = 9.3 * vze - 4.25 * dVg(3);
+    vz_control = 13.3 * vze - 4.25 * dVg(3);
     
     % Forward velocity
     vxe = target.dvx - dxg;
-    vx_control = 0.6 * vxe + 0.2 * dVg(1);
+    vx_control = -0.76 * vxe + 0.27 * dVg(1);
     
     % Lateral velocity
     vye = target.dvy - dyg;
     vy_control = 0.6 * vye - 0.2 * dVg(2);
     
     % Pitch
-    pe1 = target.pitch - pitch;
-    dp_control = 1.3 * pe1 + 0.04 * dpitch;
-    pe = target.dpitch - dpitch;
+    pe1 = vx_control - pitch;
+%     pe1 = target.pitch - pitch;
+    dp_control = 1.7 * pe1 - 0.14 * dpitch;
+%     pe = target.dpitch - dpitch;
     pe = dp_control - dpitch;
     ddp = ((1.3 * (target.pitch - pitch) - 1.1 * dpitch) - control_params.last_dp) * 0.01;
     last_dp = (1.3 * (target.pitch - pitch) - 1.1 * dpitch);
 %     pitch_control = 0.0003 * (1.3 * (target.pitch - pitch) - 1.1 * dpitch) - 0.0001 * dwyb;
     ddp = ((0.3 - dpitch) - control_params.last_dp)/0.01;
 %     ddp = bound(ddp, -20, 20);
-    control_params.last_dp = (0.0 - dpitch);
-    err = (0.3 - dpitch) - 0.5*dwyb;
-    pitch_control = 0.0006 * err ;
+%     control_params.last_dp = (0.0 - dpitch);
+%     err = (0.3 - dpitch) - 0.5*dwyb;
+    pitch_control = 0.42 * pe - 0.02*dwyb;
 %     if abs(err) > 0.02
 %         pitch_control = 0.0006 * (0.3 - dpitch) + 0.0002 * ddp;
 %     else
 %         pitch_control = 0.0006 * (0.3 - dpitch);
 %     end
     
-    if abs(pitch_control) < 0.00001
-        pitch_control = 0.0;
-    end
+%     if abs(pitch_control) < 0.00001
+%         pitch_control = 0.0;
+%     end
 %     pitch_control = bound(pitch_control, -5e-5, 5e-5);
 %     dpitch
 %     dwyb
-    ddp
+%     ddp
    
     % Roll
     re = vy_control - roll;
@@ -106,13 +107,19 @@ function [controls, control_params] = uav_control(state, controls, target, contr
     Mx = 0;%roll_control;
     My = pitch_control;
     Mz = 0;
-    R = 0;%-vz_control;
-    T1 = R/6;
-    T2 = (3*My*kr*lyp1 - 3*Mx*kr*lxp + 3*My*kr*lyp2 - 3*Mz*lxp*lyp1 + R*kr*lxp*lyp1 + R*kr*lxp*lyp2)/(6*kr*lxp*(lyp1 + lyp2));
-    T3 = -(3*Mx*kr*lxp + 3*My*kr*lyp1 + 3*My*kr*lyp2 - 3*Mz*lxp*lyp2 - R*kr*lxp*lyp1 - R*kr*lxp*lyp2)/(6*kr*lxp*(lyp1 + lyp2));
-    T4 = (3*Mx*kr*lxp - 3*My*kr*lyp1 - 3*My*kr*lyp2 - 3*Mz*lxp*lyp2 + R*kr*lxp*lyp1 + R*kr*lxp*lyp2)/(6*kr*lxp*(lyp1 + lyp2));
-    T5 = (3*Mx*kr*lxp + 3*My*kr*lyp1 + 3*My*kr*lyp2 + 3*Mz*lxp*lyp1 + R*kr*lxp*lyp1 + R*kr*lxp*lyp2)/(6*kr*lxp*(lyp1 + lyp2));
-    T6 = R/6;
+    R = -vz_control;
+%     T1 = R/6;
+%     T2 = (3*My*kr*lyp1 - 3*Mx*kr*lxp + 3*My*kr*lyp2 - 3*Mz*lxp*lyp1 + R*kr*lxp*lyp1 + R*kr*lxp*lyp2)/(6*kr*lxp*(lyp1 + lyp2));
+%     T3 = -(3*Mx*kr*lxp + 3*My*kr*lyp1 + 3*My*kr*lyp2 - 3*Mz*lxp*lyp2 - R*kr*lxp*lyp1 - R*kr*lxp*lyp2)/(6*kr*lxp*(lyp1 + lyp2));
+%     T4 = (3*Mx*kr*lxp - 3*My*kr*lyp1 - 3*My*kr*lyp2 - 3*Mz*lxp*lyp2 + R*kr*lxp*lyp1 + R*kr*lxp*lyp2)/(6*kr*lxp*(lyp1 + lyp2));
+%     T5 = (3*Mx*kr*lxp + 3*My*kr*lyp1 + 3*My*kr*lyp2 + 3*Mz*lxp*lyp1 + R*kr*lxp*lyp1 + R*kr*lxp*lyp2)/(6*kr*lxp*(lyp1 + lyp2));
+%     T6 = R/6;
+    T1 = (3*My*kr*lyp1 - 3*Mx*kr*lxp + 3*Mz*lxp*lyp1 + 2*R*kr*lxp*lyp1)/(12*kr*lxp*lyp1);
+    T3 = -(3*Mx*kr*lxp + 3*My*kr*lyp1 + 3*Mz*lxp*lyp1 - 2*R*kr*lxp*lyp1)/(12*kr*lxp*lyp1);
+    T4 = (3*Mx*kr*lxp - 3*My*kr*lyp1 + 3*Mz*lxp*lyp1 + 2*R*kr*lxp*lyp1)/(12*kr*lxp*lyp1);
+    T6 = (3*Mx*kr*lxp + 3*My*kr*lyp1 - 3*Mz*lxp*lyp1 + 2*R*kr*lxp*lyp1)/(12*kr*lxp*lyp1);
+    T2 = mean([T1, T3, T4, T6]);
+    T5 = mean([T1, T3, T4, T6]);
  
     
     dw1 = sign(T1)*sqrt(abs(T1) / 2 / ro / pi / r^2);
