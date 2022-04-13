@@ -59,64 +59,46 @@ function [controls, control_params] = uav_control(state, controls, target, contr
         T(j) = 2 * ro * pi * r^2 * vzi * (vzi - dzb);
     end
     
-    % Vertical velocity
+    %% Vertical velocity
+    % Vertial velocity difference -> vetical acceleration control
     vze = target.dvz - dzg;
-    vz_control = 13.3 * vze - 4.25 * dVg(3);
+    vz_control = 17.3 * vze - 4.25 * dVg(3);
     
-    % Forward velocity
+    %% Forward velocity
+    % Forward velocity difference -> forward acceleration (pitch) control
     vxe = target.dvx - dxg;
-    vx_control = -0.76 * vxe + 0.27 * dVxn;
-    
-    % Lateral velocity
-    vye = target.dvy - dyg;
-    vy_control = 0.76 * vye - 0.27 * dVyn;
-    
-    % Pitch
+    vx_control = -1.06 * vxe + 0.29 * dVxn;
+    % Pitch difference -> dPitch control
+    vx_control = bound(vx_control, -20*pi/180.0, 20*pi/180.0);
     pe1 = vx_control - pitch;
-%     pe1 = target.pitch - pitch;
-    dp_control = 1.7 * pe1 - 0.14 * dpitch;
-%     pe = target.dpitch - dpitch;
+    dp_control = 1.92 * pe1 - 0.11 * dpitch;
+    % dPitch difference -> ddPitch control (Myb)
     pe = dp_control - dpitch;
-%     ddp = ((1.3 * (target.pitch - pitch) - 1.1 * dpitch) - control_params.last_dp) * 0.01;
-%     last_dp = (1.3 * (target.pitch - pitch) - 1.1 * dpitch);
-%     pitch_control = 0.0003 * (1.3 * (target.pitch - pitch) - 1.1 * dpitch) - 0.0001 * dwyb;
-%     ddp = ((0.3 - dpitch) - control_params.last_dp)/0.01;
-%     ddp = bound(ddp, -20, 20);
-%     control_params.last_dp = (0.0 - dpitch);
-%     err = (0.3 - dpitch) - 0.5*dwyb;
-    pitch_control = 0.42 * pe - 0.02*dwyb;
-%     if abs(err) > 0.02
-%         pitch_control = 0.0006 * (0.3 - dpitch) + 0.0002 * ddp;
-%     else
-%         pitch_control = 0.0006 * (0.3 - dpitch);
-%     end
+    pitch_control = 0.47 * pe - 0.02*dwyb;
     
-%     if abs(pitch_control) < 0.00001
-%         pitch_control = 0.0;
-%     end
-%     pitch_control = bound(pitch_control, -5e-5, 5e-5);
-%     dpitch
-%     dwyb
-%     ddp
-   
-    % Roll
+    %% Lateral velocity
+    % Lateral velocity difference -> lateral acceleration (roll) control
+    vye = target.dvy - dyg;
+    vy_control = 0.96 * vye - 0.27 * dVyn;
+    % Roll difference -> dRoll control
+    vy_control = bound(vy_control, -20*pi/180.0, 20*pi/180.0);
     re1 = vy_control - roll;
-    dr_control = 1.7 * re1 - 0.14 * droll;
+    dr_control = 1.78 * re1 - 0.14 * droll;
+    % dRoll difference -> ddRoll control (Mxb)
     re = dr_control - droll;
-    roll_control = 0.42 * re - 0.02 * dwxb;
+    roll_control = 0.47 * re - 0.02 * dwxb;
     
-    % Yaw
+    %% Yaw channel
+    % Yaw difference -> dYaw control
     ye1 = target.yaw - yaw;
     ye1 = pi2pi(ye1);
-    dy_control = 2.18 * ye1 - 0.18 * dyaw;
+    dy_control = 2.78 * ye1 - 0.21 * dyaw;
+    % dYaw difference -> Mz control
     ye = dy_control - dyaw;
-    yaw_control = 0.53 * ye - 0.03 * dwzb;
+    yaw_control = 0.63 * ye - 0.05 * dwzb;
     
-%     ye = target.dyaw - dyaw;
-    
-%     yaw_control = 0.42 * ye + 0.02 * dwzb;
-%     yaw_control  = 0.01;
-    
+
+    %% Convert input signals to control values
     % Convert control moments into separate motors lift force change
     Mx = roll_control;
     My = pitch_control;

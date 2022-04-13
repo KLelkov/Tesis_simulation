@@ -1,7 +1,7 @@
 clc
 state.xg = 0;
 state.yg = 0;
-state.zg = -10;
+state.zg = -10; % remember that it points down!
 state.dxb = 0;
 state.dyb = 0;
 state.dzb = 0;
@@ -38,9 +38,9 @@ Time = zeros(nSim, 1);
 
 w = 1000 - 100;
 controls = [w w w w w w];
-target.yaw = 0.7;
-target.dvx = 0;
-target.dvy = 0.0;
+target.yaw = 0.0;
+target.dvx = 0.0;
+target.dvy = 1.5;
 target.dvz = 0;
 target.dpitch = 0.0;
 target.dyaw = 0.0;
@@ -65,31 +65,37 @@ end
 close all
 figure('Name', 'Motion parameters', 'Position', [100 150 1750 650])
 subplot(3,3,[1 4 7])
-plot3(Position(:,2), Position(:,1), Position(:,3), 'Linewidth', 1)
+plot3(Position(:,2), Position(:,1), -Position(:,3), 'Linewidth', 1)
 grid on
 hold on
-plot3(Position(end,2), Position(end,1), Position(end,3), '.r', 'MarkerSize', 15)
+plot3(Position(end,2), Position(end,1), -Position(end,3), '.r', 'MarkerSize', 15)
 % axis equal
 xlabel 'Yg (east)'
 ylabel 'Xg (north)'
-zlabel 'Zg (down)'
+zlabel 'Zg (down), reversed'
 subplot(3,3,2)
-plot(Time, Position, 'LineWidth', 2);
+plot(Time, Position(:,1:2), 'LineWidth', 2);
 grid on
+hold on
+plot(Time, -Position(:,3), 'Color', [0.9290 0.6940 0.1250], 'LineWidth', 2);
 title 'Position'
 xlabel 'Time, s'
 ylabel 'Coords, m'
 legend xg yg zg
 subplot(3,3,5)
-plot(Time, Velocity, 'LineWidth', 2);
+plot(Time, Velocity(:,1:2), 'LineWidth', 2);
 grid on
+hold on
+plot(Time, -Velocity(:,3), 'Color', [0.9290 0.6940 0.1250], 'LineWidth', 2);
 title 'Velocity'
 xlabel 'Time, s'
 ylabel 'Velocity, m/s'
 legend Vxg Vyg Vzg
 subplot(3,3,8)
-plot(Time, Acceleration, 'LineWidth', 2);
+plot(Time, Acceleration(:,1:2), 'LineWidth', 2);
 grid on
+hold on
+plot(Time, -Acceleration(:,3), 'Color', [0.9290 0.6940 0.1250], 'LineWidth', 2);
 title 'Acceleration'
 xlabel 'Time, s'
 ylabel 'Acceleration, m/s2'
