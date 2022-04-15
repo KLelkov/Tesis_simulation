@@ -1,7 +1,7 @@
 clc
 state.xg = 0;
 state.yg = 0;
-state.zg = -10; % remember that it points down!
+state.zg = 0; % remember that it points down!
 state.dxb = 0;
 state.dyb = 0;
 state.dzb = 0;
@@ -45,10 +45,13 @@ target.dvz = 0;
 target.dpitch = 0.0;
 target.dyaw = 0.0;
 target.pitch = 0.0;
+wp.x = 20;
+wp.y = 0;
+wp.z = -10;
 % target.pitch = 0.0;
 control_params.last_dp = 0;
 for i = 1:nSim
-    [controls, control_params] = uav_control(state, controls, target, control_params);
+    [controls, control_params] = uav_locomotion_control(state, controls, target, control_params);
     state = uav_sim_step(state, controls);
     
     Time(i) = i * dt;

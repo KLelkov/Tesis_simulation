@@ -1,4 +1,4 @@
-function [controls, control_params] = uav_control(state, controls, target, control_params)
+function [controls, control_params] = uav_locomotion_control(state, controls, target, control_params)
     W = controls;
     
     g = 9.81;
