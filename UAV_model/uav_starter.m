@@ -24,7 +24,7 @@ state.dxg = 0;
 state.dyg = 0;
 state.dzg = 0;
 
-simTime = 20;
+simTime = 60;
 dt = 0.01;
 nSim = simTime / dt;
 Position = zeros(nSim, 3);
@@ -40,7 +40,8 @@ Time = zeros(nSim, 1);
 w = 1000 - 100;
 controls = [w w w w w w];
 target.yaw = 0.0;
-target.forward_vel = 2.0;
+target.forward_vel = 0.0;
+target.lateral_vel = 0.0;
 target.dvy = 0.0;
 target.dvz = 0;
 target.dpitch = 0.0;
@@ -48,19 +49,21 @@ target.dyaw = 0.0;
 target.pitch = 0.0;
 
 wp.x = 60;
-wp.y = 60;
+wp.y = 30;
 wp.z = 0;
 % target.pitch = 0.0;
 control_params.h_int = 0;
 control_params.z_int = 0;
 control_params.last_x = 0;
-control_params.last_y = 0;
+control_params.last_y = 10;
 control_params.last_z = 0;
+control_params.last_cte = 0;
 for i = 1:nSim
     [traj_ctrl, control_params, reached] = uav_trajectory_control(state, wp, control_params);
     target.yaw = traj_ctrl.heading;
     target.dvz = traj_ctrl.height;
     target.forward_vel = traj_ctrl.forward;
+    target.lateral_vel = traj_ctrl.lateral;
     [controls, control_params] = uav_locomotion_control(state, controls, target, control_params);
     state = uav_sim_step(state, controls);
     
@@ -70,7 +73,7 @@ for i = 1:nSim
     Velocity(i,:) = [state.dxg, state.dyg, state.dzg];
     Rate(i,:) = [state.dyaw, state.dpitch, state.droll];
     Controls(i,:) = controls;
-    Controls_tr(i,:) = [target.dyaw, target.forward_vel, target.dvy, target.dvz];
+    Controls_tr(i,:) = [target.dyaw, target.forward_vel, target.lateral_vel, target.dvz];
     dRate(i,:) = [state.dwxb, state.dwyb, state.dwzb];
     Acceleration(i,:) = [state.ddxg, state.ddyg, state.ddzg];
 end
@@ -108,7 +111,7 @@ plot(Time, -Position(:,3), 'Color', [0.9290 0.6940 0.1250], 'LineWidth', 2);
 title 'Position'
 xlabel 'Time, s'
 ylabel 'Coords, m'
-legend xg yg zg
+legend xg yg zg(rev)
 subplot(3,3,5)
 plot(Time, Velocity(:,1:2), 'LineWidth', 2);
 grid on
@@ -117,7 +120,7 @@ plot(Time, -Velocity(:,3), 'Color', [0.9290 0.6940 0.1250], 'LineWidth', 2);
 title 'Velocity'
 xlabel 'Time, s'
 ylabel 'Velocity, m/s'
-legend Vxg Vyg Vzg
+legend Vxg Vyg Vzg(rev)
 subplot(3,3,8)
 plot(Time, Acceleration(:,1:2), 'LineWidth', 2);
 grid on
@@ -126,7 +129,7 @@ plot(Time, -Acceleration(:,3), 'Color', [0.9290 0.6940 0.1250], 'LineWidth', 2);
 title 'Acceleration'
 xlabel 'Time, s'
 ylabel 'Acceleration, m/s2'
-legend dVxg dVyg dVzg
+legend dVxg dVyg dVzg(rev)
 
 
 subplot(3,3,3)

@@ -80,7 +80,7 @@ function [controls, control_params] = uav_locomotion_control(state, controls, ta
     
     %% Lateral velocity
     % Lateral velocity difference -> lateral acceleration (roll) control
-    vye = target.dvy - Vyn;
+    vye = target.lateral_vel - Vyn;
     vy_control = 0.96 * vye - 0.27 * dVyn;
     % Roll difference -> dRoll control
     vy_control = bound(vy_control, -20*pi/180.0, 20*pi/180.0);

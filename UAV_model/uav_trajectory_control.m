@@ -82,15 +82,17 @@ function [controls, control_params, reached] = uav_trajectory_control(state, tar
         % Switch
         reached = true;
     end
-    CTE = (crely * cdx - crelx * cdy) / (cdx * cdx + cdy * cdy);
+    CTE = - (crely * cdx - crelx * cdy) / (cdx * cdx + cdy * cdy);
     %% Forward velocity
     dist_hor = sqrt(dx*dx + dy*dy);
     fve = dist_hor * 1.5;
     fve = bound(fve, -2, 2);
     controls.forward = fve;
     %% Lateral velocity
+    controls.lateral = 6.8 * CTE - 30.0 * (CTE - control_params.last_cte) / dt;
+    controls.lateral = bound(controls.lateral, -2, 2);
+    control_params.last_cte = CTE;
     %% Vertical velocity
-    dz = target.z - zg;
     ze = target.z - zg;
     controls.height = 0.26 * ze + 0.0 * control_params.z_int + 0.12 * dzg;
     control_params.z_int = control_params.z_int + ze * dt;
