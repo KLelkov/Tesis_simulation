@@ -36,20 +36,34 @@ function [controls, control_params] = uav_locomotion_control(state, controls, ta
     dyg = state.dyg;
     dzg = state.dzg;
     
-    % Rotation matrix
-    Rgb = [cos(yaw)*cos(pitch), sin(yaw)*cos(pitch), -sin(pitch);
-        cos(yaw)*sin(pitch)*sin(roll)-sin(yaw)*cos(roll), sin(yaw)*sin(pitch)*sin(roll)+cos(yaw)*cos(roll), cos(pitch)*sin(roll);
-        cos(yaw)*sin(pitch)*cos(roll)+sin(yaw)*sin(roll), sin(yaw)*sin(pitch)*cos(roll)-cos(yaw)*sin(roll), cos(pitch)*cos(roll)];
+    
+    dyaw = state.dyaw;
+    dpitch = state.dpitch;
+    droll = state.droll; 
+    
+    ddxg = state.ddxg;
+    ddyg = state.ddyg;
+    ddzg = state.ddzg;
     
     % Transition from body frame to geo frame
-    dVg = Rgb' * [ddxb; ddyb; ddzb];
-    dyaw = (wzb * cos(roll) + wyb * sin(roll)) / cos(pitch);
-    dpitch = wyb * cos(roll) - wzb * sin(roll);
-    droll = wxb + dyaw * sin(pitch);
+     % Rotation matrix
+%     Rgb = [cos(yaw)*cos(pitch), sin(yaw)*cos(pitch), -sin(pitch);
+%         cos(yaw)*sin(pitch)*sin(roll)-sin(yaw)*cos(roll), sin(yaw)*sin(pitch)*sin(roll)+cos(yaw)*cos(roll), cos(pitch)*sin(roll);
+%         cos(yaw)*sin(pitch)*cos(roll)+sin(yaw)*sin(roll), sin(yaw)*sin(pitch)*cos(roll)-cos(yaw)*sin(roll), cos(pitch)*cos(roll)];
+%     
+%     dVg = Rgb' * [ddxb; ddyb; ddzb];
+%     dyaw =  (wzb * cos(roll) + wyb * sin(roll)) / cos(pitch);
+%     dpitch =  wyb * cos(roll) - wzb * sin(roll);
+%     droll =  wxb + dyaw * sin(pitch);
+%     ddxg = dVg(1);
+%     ddyg = dVg(2);
+%     ddzg = dVg(3);
+    
+    
     
     % Normal frame. X is the forward motion of UAV, Y is the lateral motion
-    dVxn = dVg(1) * cos(yaw) + dVg(2) * sin(yaw);
-    dVyn = -dVg(1) * sin(yaw) + dVg(2) * cos(yaw);
+    dVxn = ddxg * cos(yaw) + ddyg * sin(yaw);
+    dVyn = -ddxg * sin(yaw) + ddyg * cos(yaw);
     Vxn = dxg * cos(yaw) + dyg * sin(yaw);
     Vyn = -dxg * sin(yaw) + dyg * cos(yaw);
 
@@ -64,7 +78,7 @@ function [controls, control_params] = uav_locomotion_control(state, controls, ta
     %% Vertical velocity
     % Vertial velocity difference -> vetical acceleration control
     vze = target.dvz - dzg;
-    vz_control = 17.3 * vze - 4.25 * dVg(3);
+    vz_control = 17.3 * vze - 4.25 * ddzg;
     
     %% Forward velocity
     % Forward velocity difference -> forward accleration (pitch) control
@@ -91,12 +105,11 @@ function [controls, control_params] = uav_locomotion_control(state, controls, ta
     roll_control = 0.47 * re - 0.02 * dwxb;
     
     %% Yaw channel
-    % Yaw difference -> dYaw control
-    ye1 = target.yaw - yaw;
-    ye1 = pi2pi(ye1);
-    dy_control = 2.78 * ye1 - 0.21 * dyaw;
+%     ye1 = target.dyaw - yaw;
+%     ye1 = pi2pi(ye1);
+%     dy_control = 2.78 * ye1 - 0.21 * dyaw;
     % dYaw difference -> Mz control
-    ye = dy_control - dyaw;
+    ye = target.dyaw - dyaw;
     yaw_control = 0.63 * ye - 0.05 * dwzb;
     
 

@@ -23,6 +23,9 @@ state.dwzb = 0;
 state.dxg = 0;
 state.dyg = 0;
 state.dzg = 0;
+state.ddxg = 0;
+state.ddyg = 0;
+state.ddzg = 0;
 
 simTime = 60;
 dt = 0.01;
@@ -60,7 +63,10 @@ control_params.last_z = 0;
 control_params.last_cte = 0;
 for i = 1:nSim
     [traj_ctrl, control_params, reached] = uav_trajectory_control(state, wp, control_params);
-    target.yaw = traj_ctrl.heading;
+    if (reached)
+%         break;
+    end
+    target.dyaw = traj_ctrl.dheading;
     target.dvz = traj_ctrl.height;
     target.forward_vel = traj_ctrl.forward;
     target.lateral_vel = traj_ctrl.lateral;

@@ -72,10 +72,7 @@ function state_prime = uav_sim_step(state, controls)
         T(j) = 2 * ro * pi * r^2 * vzi * (vzi);% - dzb);
     end
     
-    % Rotation matrix
-    Rgb = [cos(yaw)*cos(pitch), sin(yaw)*cos(pitch), -sin(pitch);
-        cos(yaw)*sin(pitch)*sin(roll)-sin(yaw)*cos(roll), sin(yaw)*sin(pitch)*sin(roll)+cos(yaw)*cos(roll), cos(pitch)*sin(roll);
-        cos(yaw)*sin(pitch)*cos(roll)+sin(yaw)*sin(roll), sin(yaw)*sin(pitch)*cos(roll)-cos(yaw)*sin(roll), cos(pitch)*cos(roll)];
+    
     
     % Full velocity in body frame
     Vb = sqrt(dxb^2 + dyb^2 + dzb^2);
@@ -109,6 +106,7 @@ function state_prime = uav_sim_step(state, controls)
     dyaw = (wzb * cos(roll) + wyb * sin(roll)) / cos(pitch);
     dpitch = wyb * cos(roll) - wzb * sin(roll);
     droll = wxb + dyaw * sin(pitch);
+    
     yaw = yaw + dyaw * dt;
     pitch = pitch + dpitch * dt;
     roll = roll + droll *dt;
@@ -128,8 +126,24 @@ function state_prime = uav_sim_step(state, controls)
     dwzb = (Mba(3) + Mbgp(3) + Mbp(3) - wxb * wyb * Jxy) / Jzz;
     
     % Transition from body frame to geo frame
+    % Rotation matrix
+    Rgb = [cos(yaw)*cos(pitch), sin(yaw)*cos(pitch), -sin(pitch);
+        cos(yaw)*sin(pitch)*sin(roll)-sin(yaw)*cos(roll), sin(yaw)*sin(pitch)*sin(roll)+cos(yaw)*cos(roll), cos(pitch)*sin(roll);
+        cos(yaw)*sin(pitch)*cos(roll)+sin(yaw)*sin(roll), sin(yaw)*sin(pitch)*cos(roll)-cos(yaw)*sin(roll), cos(pitch)*cos(roll)];
     Vg = Rgb' * [dxb; dyb; dzb];
     dVg = Rgb' * [ddxb; ddyb; ddzb];
+    
+    % Yes, this seems weird to duplicate this, but the old values are
+    % actually outdated by now 0_o
+    % This is related to the issue of simulating inertia of parameters
+    % change:
+    % Acceleration will transition to velocity one sim step later
+    % and velocity will transition to coordinates another sim step later
+    %
+    % TODO: there's probably a smarter way to do this.
+    dyaw = (wzb * cos(roll) + wyb * sin(roll)) / cos(pitch);
+    dpitch = wyb * cos(roll) - wzb * sin(roll);
+    droll = wxb + dyaw * sin(pitch);
     
     
     state_prime.xg = xg;
