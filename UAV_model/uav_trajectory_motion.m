@@ -81,8 +81,8 @@ Time = 0;
 i = 1;
 pnt = 1;
 fin = false;
-% while ~fin
-for iw = 1:400
+while ~fin
+% for iw = 1:400
     i = i + 1;
     dx = target_points(pnt,1) - X(end);
     dy = target_points(pnt,2) - Y(end);
