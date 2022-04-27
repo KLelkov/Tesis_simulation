@@ -65,12 +65,10 @@ function [controls, control_params, reached] = uav_trajectory_control(state, tar
     %% Heading error
     dx = target.x - xg;
     dy = target.y - yg;
-    dist_hor = sqrt(dx*dx + dy*dy);
     
-    dz = target.z - zg;
     target_h = atan2(dy, dx);
     he = pi2pi(target_h - yaw);
-    controls.heading = 1.2 * he + 0.04 * control_params.h_int;
+%     controls.heading = 1.2 * he + 0.04 * control_params.h_int;
     controls.heading = target_h;
     control_params.h_int = control_params.h_int + he * dt;
     %% Crosstrack error
@@ -86,8 +84,13 @@ function [controls, control_params, reached] = uav_trajectory_control(state, tar
     end
     CTE = (crely * cdx - crelx * cdy) / (cdx * cdx + cdy * cdy);
     %% Forward velocity
+    dist_hor = sqrt(dx*dx + dy*dy);
+    fve = dist_hor * 1.5;
+    fve = bound(fve, -2, 2);
+    controls.forward = fve;
     %% Lateral velocity
     %% Vertical velocity
+    dz = target.z - zg;
     ze = target.z - zg;
     controls.height = 0.26 * ze + 0.0 * control_params.z_int + 0.12 * dzg;
     control_params.z_int = control_params.z_int + ze * dt;

@@ -50,6 +50,8 @@ function [controls, control_params] = uav_locomotion_control(state, controls, ta
     % Normal frame. X is the forward motion of UAV, Y is the lateral motion
     dVxn = dVg(1) * cos(yaw) + dVg(2) * sin(yaw);
     dVyn = -dVg(1) * sin(yaw) + dVg(2) * cos(yaw);
+    Vxn = dxg * cos(yaw) + dyg * sin(yaw);
+    Vyn = -dxg * sin(yaw) + dyg * cos(yaw);
 
     
     % Propulsion moments on motors
@@ -65,20 +67,20 @@ function [controls, control_params] = uav_locomotion_control(state, controls, ta
     vz_control = 17.3 * vze - 4.25 * dVg(3);
     
     %% Forward velocity
-    % Forward velocity difference -> forward acceleration (pitch) control
-    vxe = target.dvx - dxg;
+    % Forward velocity difference -> forward accleration (pitch) control
+    vxe = target.forward_vel - Vxn;
     vx_control = -1.06 * vxe + 0.29 * dVxn;
     % Pitch difference -> dPitch control
     vx_control = bound(vx_control, -20*pi/180.0, 20*pi/180.0);
     pe1 = vx_control - pitch;
-    dp_control = 1.92 * pe1 - 0.11 * dpitch;
+    dp_control = 1.75 * pe1 - 0.31 * dpitch;
     % dPitch difference -> ddPitch control (Myb)
     pe = dp_control - dpitch;
-    pitch_control = 0.47 * pe - 0.02*dwyb;
+    pitch_control = 0.37 * pe - 0.02*dwyb;
     
     %% Lateral velocity
     % Lateral velocity difference -> lateral acceleration (roll) control
-    vye = target.dvy - dyg;
+    vye = target.dvy - Vyn;
     vy_control = 0.96 * vye - 0.27 * dVyn;
     % Roll difference -> dRoll control
     vy_control = bound(vy_control, -20*pi/180.0, 20*pi/180.0);

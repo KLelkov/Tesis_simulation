@@ -24,7 +24,7 @@ state.dxg = 0;
 state.dyg = 0;
 state.dzg = 0;
 
-simTime = 60;
+simTime = 20;
 dt = 0.01;
 nSim = simTime / dt;
 Position = zeros(nSim, 3);
@@ -40,16 +40,16 @@ Time = zeros(nSim, 1);
 w = 1000 - 100;
 controls = [w w w w w w];
 target.yaw = 0.0;
-target.dvx = 0.0;
+target.forward_vel = 2.0;
 target.dvy = 0.0;
 target.dvz = 0;
 target.dpitch = 0.0;
 target.dyaw = 0.0;
 target.pitch = 0.0;
 
-wp.x = 10;
-wp.y = 10;
-wp.z = -10;
+wp.x = 60;
+wp.y = 60;
+wp.z = 0;
 % target.pitch = 0.0;
 control_params.h_int = 0;
 control_params.z_int = 0;
@@ -60,6 +60,7 @@ for i = 1:nSim
     [traj_ctrl, control_params, reached] = uav_trajectory_control(state, wp, control_params);
     target.yaw = traj_ctrl.heading;
     target.dvz = traj_ctrl.height;
+    target.forward_vel = traj_ctrl.forward;
     [controls, control_params] = uav_locomotion_control(state, controls, target, control_params);
     state = uav_sim_step(state, controls);
     
@@ -69,7 +70,7 @@ for i = 1:nSim
     Velocity(i,:) = [state.dxg, state.dyg, state.dzg];
     Rate(i,:) = [state.dyaw, state.dpitch, state.droll];
     Controls(i,:) = controls;
-    Controls_tr(i,:) = [target.dyaw, target.dvx, target.dvy, target.dvz];
+    Controls_tr(i,:) = [target.dyaw, target.forward_vel, target.dvy, target.dvz];
     dRate(i,:) = [state.dwxb, state.dwyb, state.dwzb];
     Acceleration(i,:) = [state.ddxg, state.ddyg, state.ddzg];
 end
@@ -84,12 +85,16 @@ hold on
 plot3(Position(end,2), Position(end,1), -Position(end,3), '.r', 'MarkerSize', 15)
 % Get rid of infinite small axes, by changing the limits
 xl = get(gca, 'XLim');
-yl = get(gca, 'XLim');
+yl = get(gca, 'YLim');
+zl = get(gca, 'ZLim');
 if abs(xl(2) - xl(1)) < 0.01
     xlim([xl(1)-1, xl(1)+1]);
 end
 if abs(yl(2) - yl(1)) < 0.01
     ylim([yl(1)-1, yl(1)+1]);
+end
+if abs(zl(2) - zl(1)) < 0.01
+    zlim([zl(1)-1, zl(1)+1]);
 end
 % axis equal
 xlabel 'Yg (east)'
