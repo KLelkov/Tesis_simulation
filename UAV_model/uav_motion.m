@@ -101,6 +101,7 @@ Position = zeros(nSim, 3);
 Orientation = zeros(nSim, 3);
 Velocity = zeros(nSim, 3);
 Acceleration = zeros(nSim, 3);
+Acceleration_body = zeros(nSim, 3);
 Rate = zeros(nSim, 3);
 dRate = zeros(nSim, 3);
 Controls = zeros(nSim, 6);
@@ -135,6 +136,7 @@ control_params.last_z = 0;
 wp.x = target_points(wp_count, 1);
 wp.y = target_points(wp_count, 2);
 wp.z = -target_points(wp_count, 3);
+limit = nSim;
 mission(wp_count+1,:) = [wp.x, wp.y, wp.z];
 for i = 1:nSim
     [traj_ctrl, control_params, reached] = uav_trajectory_control(state, wp, control_params);
@@ -145,6 +147,7 @@ for i = 1:nSim
         control_params.last_z = wp.z;
         wp_count = wp_count + 1;
         if (wp_count > length(target_points))
+            limit = i - 1;
             break;
         end
         wp.x = target_points(wp_count, 1);
@@ -170,16 +173,17 @@ for i = 1:nSim
     Controls_tr(i,:) = [target.dyaw, target.forward_vel, target.lateral_vel, target.dvz];
     dRate(i,:) = [state.dwxb, state.dwyb, state.dwzb];
     Acceleration(i,:) = [state.ddxg, state.ddyg, state.ddzg];
+    Acceleration_body(i,:) = [state.ddxb, state.ddyb, state.ddzb];
 end
 
 %% Graphs
 close all
 figure('Name', 'Motion parameters', 'Position', [100 150 1750 650])
 subplot(3,3,[1 4 7])
-plot3(Position(:,2), Position(:,1), -Position(:,3), 'Linewidth', 1)
+plot3(Position(1:limit,2), Position(1:limit,1), -Position(1:limit,3), 'Linewidth', 1)
 grid on
 hold on
-plot3(Position(end,2), Position(end,1), -Position(end,3), '.r', 'MarkerSize', 15)
+plot3(Position(limit,2), Position(limit,1), -Position(limit,3), '.r', 'MarkerSize', 15)
 plot3(mission(:,2), mission(:,1), -mission(:,3), 'k', 'Linewidth', 1)
 % Get rid of infinite small axes, by changing the limits
 xl = get(gca, 'XLim');
@@ -199,28 +203,28 @@ xlabel 'Yg (east)'
 ylabel 'Xg (north)'
 zlabel 'Zg (down), reversed'
 subplot(3,3,2)
-plot(Time, Position(:,1:2), 'LineWidth', 2);
+plot(Time(1:limit), Position(1:limit,1:2), 'LineWidth', 2);
 grid on
 hold on
-plot(Time, -Position(:,3), 'Color', [0.9290 0.6940 0.1250], 'LineWidth', 2);
+plot(Time(1:limit), -Position(1:limit,3), 'Color', [0.9290 0.6940 0.1250], 'LineWidth', 2);
 title 'Position'
 xlabel 'Time, s'
 ylabel 'Coords, m'
 legend xg yg zg(rev)
 subplot(3,3,5)
-plot(Time, Velocity(:,1:2), 'LineWidth', 2);
+plot(Time(1:limit), Velocity(1:limit,1:2), 'LineWidth', 2);
 grid on
 hold on
-plot(Time, -Velocity(:,3), 'Color', [0.9290 0.6940 0.1250], 'LineWidth', 2);
+plot(Time(1:limit), -Velocity(1:limit,3), 'Color', [0.9290 0.6940 0.1250], 'LineWidth', 2);
 title 'Velocity'
 xlabel 'Time, s'
 ylabel 'Velocity, m/s'
 legend Vxg Vyg Vzg(rev)
 subplot(3,3,8)
-plot(Time, Acceleration(:,1:2), 'LineWidth', 2);
+plot(Time(1:limit), Acceleration(1:limit,1:2), 'LineWidth', 2);
 grid on
 hold on
-plot(Time, -Acceleration(:,3), 'Color', [0.9290 0.6940 0.1250], 'LineWidth', 2);
+plot(Time(1:limit), -Acceleration(1:limit,3), 'Color', [0.9290 0.6940 0.1250], 'LineWidth', 2);
 title 'Acceleration'
 xlabel 'Time, s'
 ylabel 'Acceleration, m/s2'
@@ -228,7 +232,7 @@ legend dVxg dVyg dVzg(rev)
 
 
 subplot(3,3,3)
-plot(Time, Orientation .* 180.0 / pi, 'LineWidth', 2);
+plot(Time(1:limit), Orientation(1:limit,:) .* 180.0 / pi, 'LineWidth', 2);
 grid on
 title 'Orientation'
 xlabel 'Time, s'
@@ -236,7 +240,7 @@ ylabel 'Angle, deg'
 legend Yaw Pitch Roll
 
 subplot(3,3,6)
-plot(Time, Rate .* 180.0 / pi, 'LineWidth', 2);
+plot(Time(1:limit), Rate(1:limit, :) .* 180.0 / pi, 'LineWidth', 2);
 grid on
 title 'Rate'
 xlabel 'Time, s'
@@ -244,7 +248,7 @@ ylabel 'Rate, deg/s'
 legend dYaw dPitch dRoll
 
 subplot(3,3,9)
-plot(Time, dRate .* 180.0 / pi, 'LineWidth', 2);
+plot(Time(1:limit), dRate(1:limit, :) .* 180.0 / pi, 'LineWidth', 2);
 grid on
 title 'Angular acceleration'
 xlabel 'Time, s'
@@ -253,54 +257,54 @@ legend dwxb dwyb dwzb
 
 figure('Name', 'Control parameters', 'Position', [100 150 1050 650])
 subplot(3,2,1)
-plot(Time, Controls, 'Color', [0.7 0.7 0.7], 'LineWidth', 2);
+plot(Time(1:limit), Controls(1:limit, :), 'Color', [0.7 0.7 0.7], 'LineWidth', 2);
 grid on
 hold on
-plot(Time, Controls(:,6), 'r', 'LineWidth', 2);
+plot(Time(1:limit), Controls(1:limit,6), 'r', 'LineWidth', 2);
 xlabel 'Time, s'
 ylabel 'Rate, rad/s'
 title 'W6'
 subplot(3,2,2)
-plot(Time, Controls, 'Color', [0.7 0.7 0.7], 'LineWidth', 2);
+plot(Time(1:limit), Controls(1:limit, :), 'Color', [0.7 0.7 0.7], 'LineWidth', 2);
 grid on
 hold on
-plot(Time, Controls(:,1), 'b', 'LineWidth', 2);
+plot(Time(1:limit), Controls(1:limit,1), 'b', 'LineWidth', 2);
 xlabel 'Time, s'
 ylabel 'Rate, rad/s'
 title 'W1'
 
 subplot(3,2,3)
-plot(Time, Controls, 'Color', [0.7 0.7 0.7], 'LineWidth', 2);
+plot(Time(1:limit), Controls(1:limit, :), 'Color', [0.7 0.7 0.7], 'LineWidth', 2);
 grid on
 hold on
-plot(Time, Controls(:,5), 'b', 'LineWidth', 2);
+plot(Time(1:limit), Controls(1:limit,5), 'b', 'LineWidth', 2);
 xlabel 'Time, s'
 ylabel 'Rate, rad/s'
 title 'W5'
 
 subplot(3,2,4)
-plot(Time, Controls, 'Color', [0.7 0.7 0.7], 'LineWidth', 2);
+plot(Time(1:limit), Controls(1:limit, :), 'Color', [0.7 0.7 0.7], 'LineWidth', 2);
 grid on
 hold on
-plot(Time, Controls(:,2), 'r', 'LineWidth', 2);
+plot(Time(1:limit), Controls(1:limit,2), 'r', 'LineWidth', 2);
 xlabel 'Time, s'
 ylabel 'Rate, rad/s'
 title 'W2'
 
 subplot(3,2,5)
-plot(Time, Controls, 'Color', [0.7 0.7 0.7], 'LineWidth', 2);
+plot(Time(1:limit), Controls(1:limit, :), 'Color', [0.7 0.7 0.7], 'LineWidth', 2);
 grid on
 hold on
-plot(Time, Controls(:,4), 'b', 'LineWidth', 2);
+plot(Time(1:limit), Controls(1:limit,4), 'b', 'LineWidth', 2);
 xlabel 'Time, s'
 ylabel 'Rate, rad/s'
 title 'W4'
 
 subplot(3,2,6)
-plot(Time, Controls, 'Color', [0.7 0.7 0.7], 'LineWidth', 2);
+plot(Time(1:limit), Controls(1:limit, :), 'Color', [0.7 0.7 0.7], 'LineWidth', 2);
 grid on
 hold on
-plot(Time, Controls(:,3), 'r', 'LineWidth', 2);
+plot(Time(1:limit), Controls(1:limit,3), 'r', 'LineWidth', 2);
 xlabel 'Time, s'
 ylabel 'Rate, rad/s'
 title 'W3'

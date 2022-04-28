@@ -187,8 +187,8 @@ for i = 1:nSim
         gps_delta(i,1) = gps_delta(i-1,1) + gps_ddelta(i-1,1) * dt;
         gps_delta(i,2) = gps_delta(i-1,2) + gps_ddelta(i-1,2) * dt;
     end
-    gps_ddelta(i,1) = - mu * gps_ddelta(i,1) + sqrt(2 * (sigma*cos(gps_angle))^2 * mu) * normrnd(0,1);
-    gps_ddelta(i,2) = - mu * gps_ddelta(i,2) + sqrt(2 * (sigma*sin(gps_angle))^2 * mu) * normrnd(0,1);
+    gps_ddelta(i,1) = - mu * gps_delta(i,1) + sqrt(2 * (sigma*cos(gps_angle))^2 * mu) * normrnd(0,1);
+    gps_ddelta(i,2) = - mu * gps_delta(i,2) + sqrt(2 * (sigma*sin(gps_angle))^2 * mu) * normrnd(0,1);
 
     if rem(i, 100) == 0 || i == 1
         gps_pos_errorX = gps_pos_error * sin(Time(i)/250);

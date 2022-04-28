@@ -126,7 +126,7 @@ function state_prime = uav_sim_step(state, controls)
     dwzb = (Mba(3) + Mbgp(3) + Mbp(3) - wxb * wyb * Jxy) / Jzz;
     
     % Transition from body frame to geo frame
-    % Rotation matrix
+    % Rotation matrix from geo to body
     Rgb = [cos(yaw)*cos(pitch), sin(yaw)*cos(pitch), -sin(pitch);
         cos(yaw)*sin(pitch)*sin(roll)-sin(yaw)*cos(roll), sin(yaw)*sin(pitch)*sin(roll)+cos(yaw)*cos(roll), cos(pitch)*sin(roll);
         cos(yaw)*sin(pitch)*cos(roll)+sin(yaw)*sin(roll), sin(yaw)*sin(pitch)*cos(roll)-cos(yaw)*sin(roll), cos(pitch)*cos(roll)];
